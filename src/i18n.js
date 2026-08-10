@@ -281,6 +281,12 @@ const DICT = {
   'chmod.judge.desc': { id: 'Nilai pernyataan: benar atau salah.', en: 'Judge each statement: true or false.' },
   'chmod.duel.name':  { id: 'Duel Timbangan', en: 'Scale Duel' },
   'chmod.duel.desc':  { id: 'Bandingkan dua hitungan, pilih yang lebih besar.', en: 'Compare two calculations, pick the larger one.' },
+  'chmod.mystery.name':{ id: 'Ruang Misteri', en: 'Mystery Room' },
+  'chmod.mystery.desc':{ id: 'Teka-teki logika, pola, dan deduksi — asah otak!', en: 'Logic, pattern & deduction puzzles — brain workout!' },
+  'chmod.combo.name':  { id: 'Rantai Juara', en: 'Champion Chain' },
+  'chmod.combo.desc':  { id: 'Soal berantai: jawaban soal 1 jadi input soal 2.', en: 'Chain problems: answer of Q1 becomes input for Q2.' },
+  'chmod.boss.name':   { id: 'Bos Terakhir', en: 'Final Boss' },
+  'chmod.boss.desc':   { id: 'Soal susah semua — multi-langkah, untuk yang berani!', en: 'All hard problems — multi-step, for the brave!' },
 
   // ── Clan ───────────────────────────────────
   'clan.need_account':    { id: 'Klan butuh akun dulu, nih', en: 'You need an account for clans' },
