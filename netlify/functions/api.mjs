@@ -459,34 +459,46 @@ ${TONE}
 🎯 TINGKAT: ${LEVEL_NAME[level]}
 ${ULTIMATE_LEVEL_GUIDE[level]}
 
+━━━ BAHASA — SEDERHANA & AKRAB ━━━
+🗣️ SETIAP soal pakai BAHASA SEHARI-HARI — kayak ngobrol ke teman di kafe. BUKAN bahasa buku pelajaran.
+🫧 SELIPKAN ANALOGI di minimal 50% soal. Pake benda/kejadian sehari-hari supaya konsep abstrak jadi gampang kebayang:
+   • Game: level-up, inventory slot, combo, HP/MP, skin, rank, loot box
+   • Masak & jajan: resep, porsi, antrean, diskon, meja kafe, topping
+   • Olahraga: skor, klasemen, lapangan, formasi pemain, putaran lap
+   • Musik & art: playlist, pixel art, pola drum, tangga nada, filter foto
+   • Travel: rute, halte, kompas, baris kursi, denah mal, tangga, lift
+   • Alam & sci-fi: sarang lebah, orbit planet, puzzle alien, kode rahasia
+📝 Tiap soal maks 30 kata — pendek, jelas, ngena. JANGAN bertele-tele.
+❌ JANGAN pakai: "jika", "maka", "tentukan", "hitunglah", "berapakah" — ganti dengan: "cari", "ada berapa", "tebak", "di mana", "berapa ya"
+
 ━━━ KOMPOSISI WAJIB ━━━
 📐 80% soal VISUAL/SPASIAL — pemain harus MEMBAYANGKAN bentuk, posisi, rotasi, grid, atau susunan.
 🧠 20% soal LOGIKA MURNI — lateral thinking, trace variabel, puzzle kata-angka.
 
 ━━━ FORMAT SOAL (WAJIB ROTASI — jangan 2 format sama berturut!) ━━━
 
-📐 FORMAT VISUAL (80% — pilih dari sini):
-1. PATTERN — Pola visual/geometris: "Pola: ◆◇◆◆◇◆◆◆◇◆◆◆◆◇? Berapa jumlah ◆ sebelum ◇ berikutnya?" Atau urutan angka dengan twist visual: "1, 3, 7, 15, ?" (2ⁿ-1). JANGAN pola aritmetika biasa.
-2. ROTATION — Rotasi/refleksi bangun: "Kubus: depan=4, atas=2, kanan=6. Diputar ke KANAN 1×, lalu ke ATAS 1×. Angka apa di atas sekarang?" Atau "Jam 3:15, jarum jam diputar 180°, pukul berapa?"
-3. GRID — Matriks/tabel 2D: "Grid 3×3: [2,?,6 / 3,6,9 / 4,8,12]. Cari ?" Atau "Magic square 3×3, jumlah tiap baris=15. Pojok kiri=2, tengah=5. Berapa pojok kanan?" Atau denah kota sederhana.
-4. DEDUCTION — Deduksi visual posisional: "5 meja berjajar. Meja merah di antara biru dan hijau. Meja kuning di ujung kiri. Meja ungu di kanan merah. Urutan dari kiri?" Jawaban SELALU nomor posisi (1,2,3,4,5).
-5. CRYPTOVISUAL — Simbol/gambar = angka: "Jika ◆◇ + ◇◆ = 99 dan ◆ > ◇, berapa ◆ × ◇?" Atau "🔺+🟦=12, 🔺×🟦=32. 🔺>🟦. Berapa 🔺−🟦?" — sistem persamaan dengan twist visual.
-6. SPATIAL — Spasial murni: "Titik A(2,3), B(8,3). Titik C di tengah AB. Berapa jarak A ke C?" Atau "Dari atas, bawah, kiri, kanan — ada 4 jalan. Kamu hadap UTARA, belok KANAN 2×, lalu KIRI 1×. Hadap mana sekarang?" Jawaban: 1=utara, 2=timur, 3=selatan, 4=barat.
-7. TRANSFORM — Transformasi/encoding: "Kode: A=1, B=2, ..., Z=26. Kata 'CAT' = 3+1+20 = 24. Kata 'BED' = berapa?" Atau scaling: "Gambar diskalakan 3×. Semula 5×5 petak. Berapa petak sekarang?"
+📐 FORMAT VISUAL (80%):
+1. PATTERN — Contoh pakai analogi: "Nada musik: do-re-mi-fa-sol-la-ti-do. Tangga nada ke-9?" Atau "Level game: 1→2→4→8→? (XP naik 2× tiap level). Level 5 butuh berapa XP?" Atau "Susunan bata: 1, 4, 9, 16, ? (jumlah bata buat piramida segi-n). Lapis ke-5?"
+2. ROTATION — Contoh pakai analogi: "Kompas di HP: hadap utara. Layar diputar 90° kanan 3×. Sekarang hadap mana?" Atau "Dadu di papan ular tangga: sisi atas=3, depan=1. Dilempar ke kanan 1×. Sisi atas sekarang?" Atau "Kamera selfie diputar: depan→bawah→belakang→atas→? Mana selanjutnya?"
+3. GRID — Contoh pakai analogi: "Denah tempat duduk 3×3 di bioskop. Baris 1: kursi 1,3,5. Baris 2: kursi 2,4,6. Baris 3: 3,?,9. Ada pola?" Atau "Stiker dikoleksi di album 3×3. Halaman 1 isi 3, halaman 2 isi 6. Satu album penuh isi berapa?"
+4. DEDUCTION — Contoh pakai analogi: "Antrean di kafe: Andi di antara Budi & Citra. Dodi paling belakang. Eka tepat di depan Budi. Siapa antrean ke-2?" Atau "Parkiran: 5 motor sejajar. Motor merah di antara biru & hitam. Motor putih di ujung. Motor hijau di kanan merah. Urutan dari kiri?"
+5. CRYPTOVISUAL — Contoh pakai analogi: "Di toko buah: 🍎+🍎+🍊=15. 🍎=4. Satu 🍊 harganya berapa?" Atau "Menu combo: 🍔+🥤=12, 🍔×🥤=32, 🍔>🥤. Harga 🍔−🥤?"
+6. SPATIAL — Contoh pakai analogi: "Kamu di lantai 3 mal. Naik 5 lantai, turun 2, naik 1. Sampai lantai berapa?" Atau "Titik kumpul di tengah lapangan. Dari gawang (ujung kiri) ke titik kumpul = 25 langkah. Gawang ke gawang?"
+7. TRANSFORM — Contoh pakai analogi: "Filter resize: foto 4×6 jadi 3× lebih gede. Ukuran baru?" Atau "Kode redeem game: A=1 s/d Z=26. Kode 'ACE' = 1+3+5 = 9. Kode 'BAG' = ?"
 
-🧠 FORMAT LOGIKA (20% — pilih dari sini):
-8. VARIABLE — Trace ala programming: "x=5, y=8. Step1: x=x+y. Step2: y=x−y. Step3: x=x−y. Berapa x+y sekarang?" Atau "Loop: for i=1..4: s=s+i×i. s awal=0. Berapa s akhir?"
-9. LATERAL — Puzzle insight: "1=4, 2=3, 3=3, 4=6, 5=4, 6=?" (hitung huruf: e-n-a-m = 4). Atau "Semua mobil punya 4 roda. 1 mobil punya 3. Berapa jumlah roda 5 mobil?" — jebakan kata.
-10. CONDITIONAL — Logika branching: "N=12. Aturan: jika N genap→N/2, jika ganjil→N×3−1. Iterasi 4×. Hasil akhir?" Atau state machine: "Lampu: ON→OFF→ON. Setiap klik: maju 1 state. Mulai OFF, klik 7×. State sekarang?" (1=ON, 0=OFF)
+🧠 FORMAT LOGIKA (20%):
+8. VARIABLE — Contoh pakai analogi: "Game RPG: HP awal=10. Kena buff +5, lalu heal 2× HP sekarang. HP akhir?" Atau "Koin di 2 kantong ditukar: kiri=7, kanan=4. Pindah semua kiri ke kanan, lalu kanan kasih 3 ke kiri. Isi kiri sekarang?"
+9. LATERAL — Contoh pakai analogi: "Satu lusin telur = 12. Setengah lusin = 6. Dua lusin = ?" (ini gampang!). Atau "Kalender: bulan 1=31, bulan 2=28, bulan 3=31, bulan 4=? (hari)" Atau "Timbangan: 1 bata = 3kg + setengah bata. 1 bata berapa kg?"
+10. CONDITIONAL — Contoh pakai analogi: "XP game: 100 XP. Kalau >50→XP/2, kalau ≤50→XP+20. Iterasi 2×. XP akhir?" Atau "Mode HP: silent→getar→ring→silent. Mulai getar, pencet 5×. Mode sekarang? (1=silent, 2=getar, 3=ring)"
 
 ⚠️ ATURAN KETAT — JANGAN DILANGGAR:
 - SETIAP soal formatnya HARUS UNIK. ${picked.slice(0, 5).map((f, i) => `Soal ${i + 1} wajib format "${f}"`).join('. ')}. Lanjutkan rotasi.
 - 80% soal HARUS VISUAL/SPASIAL — melibatkan posisi, rotasi, grid, susunan, bayangan. JANGAN cuma soal cerita hitung.
+- MINIMAL 50% soal harus punya ANALOGI sehari-hari (game, masak, olahraga, traveling, dll). Jangan cuma angka telanjang!
 - JAWABAN HARUS ANGKA BULAT POSITIF (1-9999). Periksa 2× sebelum menjawab — jangan sampai salah!
 - JANGAN gunakan format: story, quick, compare, missing, estimate — itu soal Challenge mode, BUKAN Ultimate.
-- Bikin pemain MIKIR KERAS lalu DAPAT INSIGHT. Soal harus terasa "cerdas", bukan "sulit".
-- Konteks: game, sci-fi, misteri, teknologi, alam, seni, coding — variatif.
-- ${LANG_RULE.id} Maks 35 kata per soal.
+- Bahasa SANTUN & GAUL (santai Jakarta), BUKAN bahasa textbook. Kayak ngomong ke temen.
+- ${LANG_RULE.id} Maks 30 kata per soal. Singkat tapi ngena.
 - Variasikan rentang jawaban. Jangan semua jawaban <20 atau semua >500.`,
       { jumlah: count, tingkat: level, rotasi: picked.map((f, i) => ({ index: i, format: f })) },
       `{"soal":[{"format":"pattern","domain":"logic","teks":"...","jawaban":42,"ikon":"ph:shapes-fill"}]}`,
