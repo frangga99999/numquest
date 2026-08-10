@@ -9,7 +9,6 @@ import Clan from './Clan.jsx'
 import Arena from './Arena.jsx'
 import AIPath from './AIPath.jsx'
 import Shop from './Shop.jsx'
-import Pomodoro from './Pomodoro.jsx'
 import Learn from './Learn.jsx'
 import { AI_PATH, nodeStatus, pathProgress, clearPathNode, starsFor, NODE_PROBLEM_COUNT } from './aiPath.js'
 import { useGame, blank, goalProgress, levelName, finishSession, heartsNow, energyNow, claimQuest, isClaimed, push, shopItem, last30 } from './store.js'
@@ -27,6 +26,11 @@ import { t, tf, LANGS } from './i18n.js'
 const oneLine = (s) => (s || '').split(/(?<=[.!?])\s/)[0]?.slice(0, 90) || ''
 
 const GOALS = [5, 10, 15, 20, 30, 45, 60]
+const FOCUS_DURATIONS = [
+  { min: 10, icon: 'ph:fire-fill', color: '#ff9f6b' },
+  { min: 15, icon: 'ph:lightning-fill', color: '#ffc86b' },
+  { min: 25, icon: 'ph:timer-fill', color: 'var(--green)' },
+]
 const DAY_LETTER = ['M', 'S', 'S', 'R', 'K', 'J', 'S'] // Minggu..Sabtu
 // Warna emblem avatar ikut tingkat: dasar=batu, menengah=besi, mahir=emas
 const LEVEL_TIER = { easy: 2, mid: 3, adv: 4 }
@@ -57,21 +61,32 @@ function FocusPicker({ visible, selected, onSelect, onStart, label, lang }) {
   if (!visible) return null
   return (
     <motion.div className="focus-sheet"
-      initial={{ opacity: 0, y: 60 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 60 }}
-      transition={{ type: 'spring', stiffness: 340, damping: 28 }}>
-        <h3 style={{ marginBottom: 12 }}>{label || t('focus.title', lang)}</h3>
+      initial={{ opacity: 0, y: 80, filter: 'blur(3px)' }}
+      animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
+      exit={{ opacity: 0, y: 80, filter: 'blur(3px)' }}
+      transition={{ type: 'spring', stiffness: 320, damping: 30, mass: .9 }}>
+        <motion.h3 initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: .08 }}>{label || t('focus.title', lang)}</motion.h3>
         <div className="focus-grid">
-          {FOCUS_OPTIONS.map((opt) => (
+          {FOCUS_OPTIONS.map((opt, i) => (
             <motion.button key={String(opt.id)} whileTap={{ scale: 0.93 }}
               className={'focus-card' + (selected === opt.id ? ' active' : '')}
               style={{ '--fc': opt.color }}
+              initial={{ opacity: 0, y: 24, scale: .9 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              transition={{ delay: .1 + i * .08, type: 'spring', stiffness: 340, damping: 24 }}
               onClick={() => onSelect(opt.id)}>
-              <Icon name={opt.icon} size={36} />
-              <span>{t(opt.labelKey, lang)}</span>
+              <motion.div
+                animate={selected === opt.id ? { scale: [1, 1.15, 1] } : {}}
+                transition={{ duration: .5 }}>
+                <Icon name={opt.icon} size={36} />
+              </motion.div>
+              <b style={{ color: selected === opt.id ? 'var(--ink)' : 'var(--dim)' }}>{t(opt.labelKey, lang)}</b>
             </motion.button>
           ))}
         </div>
-        <motion.button className="btn" style={{ marginTop: 16 }} whileTap={{ scale: 0.97 }} onClick={onStart}>
+        <motion.button className="btn" style={{ marginTop: 16 }} whileTap={{ scale: 0.97 }} onClick={onStart}
+          initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: .35 }}>
           <Icon name="ph:play-fill" size={18} /> {t('home.cta_start', lang || 'id')}
         </motion.button>
     </motion.div>
@@ -346,7 +361,7 @@ function AiMascot({ size = 76, happy }) {
 }
 
 /* --------------------------------- Home ---------------------------------- */
-function Home({ g, setG, plan, onStartPicker, onChallengePicker, onOpenPath, onOpenShop, onPomodoro, onSettings }) {
+function Home({ g, setG, plan, onStartPicker, onChallengePicker, onOpenPath, onOpenShop, onFocus, onSettings }) {
   const prog = goalProgress(g)
   const lv = buildingLevels(g)
   const st = levelStatus(g)
@@ -390,14 +405,25 @@ function Home({ g, setG, plan, onStartPicker, onChallengePicker, onOpenPath, onO
           </div>
         </div>
 
-        {/* 7 hari terakhir — streak kelihatan, bukan cuma angka */}
+        {/* 7 hari terakhir — timeline nodes */}
         <div className="week-strip">
-          {week.map((d, k) => (
-            <div key={d.key} className={'week-day' + (d.goalMet ? ' met' : d.problems ? ' partial' : '')}>
-              <span className="week-dot">{d.goalMet && <Icon name="check" size={11} />}</span>
-              <small>{DAY_LETTER[(new Date(d.key).getDay() + 7) % 7]}</small>
-            </div>
-          ))}
+          {week.map((d, k) => {
+            const date = new Date(d.key)
+            const isToday = d.key === dayKey()
+            const dayNum = date.getDate()
+            return (
+              <motion.div key={d.key}
+                className={'week-day' + (d.goalMet ? ' met' : d.problems ? ' partial' : '') + (isToday ? ' today' : '')}
+                initial={{ opacity: 0, y: 12, scale: .8 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                transition={{ delay: .15 + k * .06, type: 'spring', stiffness: 340, damping: 24 }}>
+                <span className="week-dot">
+                  {d.goalMet ? <Icon name="check" size={14} /> : dayNum}
+                </span>
+                <small>{DAY_LETTER[(date.getDay() + 7) % 7]}</small>
+              </motion.div>
+            )
+          })}
         </div>
 
         <div style={{ position: 'relative', zIndex: 1 }}>
@@ -433,34 +459,33 @@ function Home({ g, setG, plan, onStartPicker, onChallengePicker, onOpenPath, onO
         </div>
       </div>
 
-      {/* Aksi cepat — 3 kartu game-HUD dengan ikon dominan */}
+      {/* ── Tablet: 2‑column layout. Mobile: stacks naturally ───────── */}
+      <div className="home-cols">
+        <div className="home-col-left">
+
+      {/* Aksi cepat — 3 kartu game-HUD bersih */}
       <div className="quick-grid">
         <motion.button className="quick-card quick-card--path" onClick={onOpenPath} whileTap={{ scale: 0.96 }}>
-          <div className="qc-hero">
-            <span className="qc-hero-ring" style={{ borderColor: 'var(--violet)' }}>
-              <svg width="56" height="56" viewBox="0 0 56 56" className="qc-progress-ring">
-                <circle cx="28" cy="28" r="24" fill="none" stroke="rgba(255,255,255,.06)" strokeWidth="3" />
-                <motion.circle cx="28" cy="28" r="24" fill="none" stroke="var(--violet)" strokeWidth="3"
-                  strokeLinecap="round" strokeDasharray={`${(pathProgress(g).done / Math.max(1, pathProgress(g).total)) * 151} 151`}
-                  transform="rotate(-90 28 28)" initial={{ strokeDasharray: '0 151' }}
-                  animate={{ strokeDasharray: `${Math.max(2, (pathProgress(g).done / Math.max(1, pathProgress(g).total)) * 151)} 151` }}
-                  transition={{ duration: 1, ease: 'easeOut' }} />
-              </svg>
-              <Icon name="ph:robot-fill" size={24} color="var(--violet)" />
-            </span>
+          <span className="qc-icon-circle" style={{ borderColor: 'var(--violet)' }}>
+            <Icon name="ph:robot-fill" size={24} color="var(--violet)" />
+          </span>
+          <div className="qc-progress-bar">
+            <motion.div className="qc-progress-bar-fill"
+              style={{ background: 'var(--violet)' }}
+              initial={{ width: '0%' }}
+              animate={{ width: `${Math.min(100, (pathProgress(g).done / Math.max(1, pathProgress(g).total)) * 100)}%` }}
+              transition={{ duration: .8, ease: 'easeOut' }} />
           </div>
           <b>{t('path.card_title', g.lang)}</b>
           <span className="qc-metric" style={{ color: 'var(--violet)' }}>{pathProgress(g).done}/{pathProgress(g).total}</span>
         </motion.button>
 
-        <motion.button className="quick-card quick-card--pomo" onClick={onPomodoro} whileTap={{ scale: 0.96 }}>
-          <div className="qc-hero">
-            <span className="qc-hero-ring" style={{ borderColor: '#ff9f6b' }}>
-              <motion.div className="qc-pulse" animate={{ scale: [1, 1.08, 1] }} transition={{ duration: 2.5, repeat: Infinity }}>
-                <Icon name="ph:brain-fill" size={28} color="#ff9f6b" />
-              </motion.div>
-            </span>
-          </div>
+        <motion.button className="quick-card quick-card--pomo" onClick={onFocus} whileTap={{ scale: 0.96 }}>
+          <span className="qc-icon-circle" style={{ borderColor: '#ff9f6b' }}>
+            <motion.div animate={{ scale: [1, 1.06, 1] }} transition={{ duration: 2.5, repeat: Infinity }}>
+              <Icon name="ph:brain-fill" size={24} color="#ff9f6b" />
+            </motion.div>
+          </span>
           <b>{t('home.action_focus', g.lang)}</b>
           <span className="qc-metric" style={{ color: '#ff9f6b' }}>
             <Icon name="ph:timer-fill" size={10} /> +XP
@@ -468,19 +493,34 @@ function Home({ g, setG, plan, onStartPicker, onChallengePicker, onOpenPath, onO
         </motion.button>
 
         <motion.button className="quick-card quick-card--shop" onClick={onOpenShop} whileTap={{ scale: 0.96 }}>
-          <div className="qc-hero">
-            <span className="qc-hero-ring" style={{ borderColor: '#ffc86b' }}>
-              <span className="qc-coin-stack">
-                <Icon name="ph:coin-fill" size={11} color="#ffe0a0" style={{ position: 'absolute', top: 3, opacity: .5 }} />
-                <Icon name="ph:coin-fill" size={13} color="#ffc86b" style={{ position: 'absolute', top: 10, opacity: .75 }} />
-                <Icon name="ph:coin-fill" size={15} color="#ffd080" />
-              </span>
-            </span>
-          </div>
+          <span className="qc-icon-circle" style={{ borderColor: '#ffc86b' }}>
+            <Icon name="ph:coin-fill" size={24} color="#ffc86b" />
+          </span>
           <b>{t('shop.card_title', g.lang)}</b>
           <span className="qc-metric" style={{ color: '#ffc86b' }}>{g.coins}</span>
         </motion.button>
       </div>
+
+      {/* Kerajaan mini — tablet: di kolom kiri */}
+      <GamePanel>
+        <div className="between" style={{ marginBottom: 2 }}>
+          <GameTitle icon="ph:buildings-fill" color="#a0c8ff">{t('kingdom.title', g.lang)}</GameTitle>
+          <GameBadge label={`${Object.values(lv).reduce((a, b) => a + b, 0)}/50`} color="var(--dim)" bg="rgba(255,255,255,.06)" />
+        </div>
+        <div className="gp-territory">
+          {Object.entries(DOMAINS).map(([id, d]) => (
+            <div key={id} className="gp-territory-item" title={d.region}>
+              <Emblem icon={lv[id] ? d.icon : 'lock'} level={lv[id]} size={44} />
+              <div className="gp-territory-bar">
+                <span style={{ width: `${(lv[id] / 5) * 100}%` }} />
+              </div>
+            </div>
+          ))}
+        </div>
+      </GamePanel>
+
+        </div>{/* /home-col-left */}
+        <div className="home-col-mid">
 
       {/* Pelatih AI — playful companion */}
       {ai && (
@@ -537,6 +577,9 @@ function Home({ g, setG, plan, onStartPicker, onChallengePicker, onOpenPath, onO
         </motion.div>
       )}
 
+        </div>{/* /home-col-mid */}
+        <div className="home-col-right">
+
       {/* Tantangan harian */}
       {ch && (
         <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}>
@@ -585,77 +628,103 @@ function Home({ g, setG, plan, onStartPicker, onChallengePicker, onOpenPath, onO
         </motion.div>
       )}
 
-      {/* Kerajaan mini */}
-      <GamePanel>
-        <div className="between" style={{ marginBottom: 2 }}>
-          <GameTitle icon="ph:buildings-fill" color="#a0c8ff">{t('kingdom.title', g.lang)}</GameTitle>
-          <GameBadge label={`${Object.values(lv).reduce((a, b) => a + b, 0)}/50`} color="var(--dim)" bg="rgba(255,255,255,.06)" />
-        </div>
-        <div className="gp-territory">
-          {Object.entries(DOMAINS).map(([id, d]) => (
-            <div key={id} className="gp-territory-item" title={d.region}>
-              <Emblem icon={lv[id] ? d.icon : 'lock'} level={lv[id]} size={44} />
-              <div className="gp-territory-bar">
-                <span style={{ width: `${(lv[id] / 5) * 100}%` }} />
-              </div>
-            </div>
-          ))}
-        </div>
-      </GamePanel>
+        </div>{/* /home-col-right */}
+      </div>{/* /home-cols */}
 
     </div>
   )
 }
 
 /* --------------------------- Briefing tantangan --------------------------- */
-// Layar taruhan sebelum masuk: bikin user tahu aturannya dan sadar ini beda
-// dari latihan biasa — combo yang nentuin, bukan cuma benar/salah.
 function ChallengeBrief({ ch, g, onStart, onClose }) {
   const target = challengeTarget(ch.count)
   const items = Object.entries(g.items || {}).filter(([, n]) => n > 0)
+  const rules = [
+    { icon: 'ph:fire-fill', color: '#ff9f6b', text: t('ch.rule_combo', g.lang) },
+    { icon: 'ph:timer-fill', color: 'var(--green)', text: t('ch.rule_speed', g.lang) },
+    { icon: 'ph:lifebuoy-fill', color: 'var(--gold)',
+      text: items.length
+        ? tf('ch.brief_items', g.lang, { n: items.reduce((a, [, n]) => a + n, 0) })
+        : t('ch.brief_noitems', g.lang) },
+  ]
   return (
     <motion.div className="modal-backdrop" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
       onClick={onClose}>
       <motion.div className="modal-panel ch-brief" onClick={(e) => e.stopPropagation()}
-        initial={{ opacity: 0, scale: 0.92, y: 24 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.92, y: 24 }}
-        transition={{ type: 'spring', stiffness: 320, damping: 28 }}>
+        initial={{ opacity: 0, scale: 0.9, y: 30, filter: 'blur(4px)' }}
+        animate={{ opacity: 1, scale: 1, y: 0, filter: 'blur(0px)' }}
+        exit={{ opacity: 0, scale: 0.92, y: 20, filter: 'blur(2px)' }}
+        transition={{ type: 'spring', stiffness: 340, damping: 30, mass: .85 }}>
 
         <div className="ch-brief-banner">
-          <motion.div animate={{ rotate: [-8, 8, -8] }} transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}>
-            <Icon name="ph:sword-fill" size={40} color="var(--gold)" />
+          {/* Dramatic sword with glow */}
+          <motion.div style={{ position: 'relative' }}
+            initial={{ scale: 0, rotate: -60 }} animate={{ scale: 1, rotate: 0 }}
+            transition={{ type: 'spring', stiffness: 300, damping: 14, delay: .05 }}>
+            <motion.div style={{
+              position: 'absolute', inset: -16, borderRadius: '50%',
+              background: 'radial-gradient(circle, rgba(244,185,66,.25) 0%, transparent 70%)',
+            }} animate={{ scale: [1, 1.3, 1], opacity: [.6, .2, .6] }}
+              transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }} />
+            <motion.div animate={{ rotate: [-6, 6, -6] }}
+              transition={{ duration: 2.5, repeat: Infinity, ease: 'easeInOut' }}>
+              <Icon name="ph:sword-fill" size={44} color="var(--gold)" />
+            </motion.div>
           </motion.div>
-          <span className="ch-brief-tag">{t('ch.brief_tag', g.lang)}</span>
-          <h2>{ch.nameKey ? t(ch.nameKey, g.lang) : ch.title}</h2>
-          <p>{ch.descKey ? t(ch.descKey, g.lang) : ch.desc}</p>
+          <motion.span className="ch-brief-tag"
+            initial={{ opacity: 0, y: -6 }} animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: .12 }}>{t('ch.brief_tag', g.lang)}</motion.span>
+          <motion.h2 initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: .16 }}>{ch.nameKey ? t(ch.nameKey, g.lang) : ch.title}</motion.h2>
+          <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+            transition={{ delay: .2 }}>{ch.descKey ? t(ch.descKey, g.lang) : ch.desc}</motion.p>
         </div>
 
+        {/* Stats with count-up stagger */}
         <div className="ch-brief-stats">
-          <div><b>{ch.count}</b><span>{t('ch.brief_problems', g.lang)}</span></div>
-          <div><b style={{ color: 'var(--gold)' }}>{target}</b><span>{t('ch.brief_target', g.lang)}</span></div>
-          <div><b style={{ color: 'var(--violet)' }}>×{ch.mult}</b><span>{t('ch.brief_xp', g.lang)}</span></div>
+          {[
+            { val: ch.count, label: t('ch.brief_problems', g.lang), color: 'var(--violet)' },
+            { val: target, label: t('ch.brief_target', g.lang), color: 'var(--gold)' },
+            { val: `×${ch.mult}`, label: t('ch.brief_xp', g.lang), color: 'var(--green)' },
+          ].map((s, i) => (
+            <motion.div key={i}
+              initial={{ opacity: 0, scale: .8, y: 12 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              transition={{ delay: .22 + i * .08, type: 'spring', stiffness: 350, damping: 22 }}>
+              <motion.b style={{ color: s.color }}
+                initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+                transition={{ delay: .3 + i * .12 }}>{s.val}</motion.b>
+              <span>{s.label}</span>
+            </motion.div>
+          ))}
         </div>
 
+        {/* Rules stagger in */}
         <div className="ch-brief-rules">
-          <div className="ch-brief-rule">
-            <Icon name="ph:fire-fill" size={16} color="#ff9f6b" />
-            <span>{t('ch.rule_combo', g.lang)}</span>
-          </div>
-          <div className="ch-brief-rule">
-            <Icon name="ph:timer-fill" size={16} color="var(--green)" />
-            <span>{t('ch.rule_speed', g.lang)}</span>
-          </div>
-          <div className="ch-brief-rule">
-            <Icon name="ph:lifebuoy-fill" size={16} color="var(--gold)" />
-            <span>{items.length
-              ? <>{tf('ch.brief_items', g.lang, { n: items.reduce((a, [, n]) => a + n, 0) })}</>
-              : <>{t('ch.brief_noitems', g.lang)}</>}</span>
-          </div>
+          {rules.map((r, i) => (
+            <motion.div key={i} className="ch-brief-rule"
+              initial={{ opacity: 0, x: -16 }} animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: .35 + i * .1, type: 'spring', stiffness: 300, damping: 24 }}>
+              <motion.div
+                animate={{ scale: [1, 1.3, 1] }}
+                transition={{ duration: 1.8, repeat: Infinity, delay: i * .6 }}>
+                <Icon name={r.icon} size={18} color={r.color} />
+              </motion.div>
+              <span>{r.text}</span>
+            </motion.div>
+          ))}
         </div>
 
-        <GameButton onClick={onStart}>
-          <Icon name="ph:sword-fill" size={18} /> {t('ch.brief_start', g.lang)}
-        </GameButton>
-        <button className="btn ghost" onClick={onClose}>{t('ch.brief_later', g.lang)}</button>
+        <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: .55 }}>
+          <GameButton onClick={onStart}>
+            <Icon name="ph:sword-fill" size={18} /> {t('ch.brief_start', g.lang)}
+          </GameButton>
+        </motion.div>
+        <motion.button className="btn ghost" onClick={onClose}
+          initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: .6 }}>
+          {t('ch.brief_later', g.lang)}
+        </motion.button>
       </motion.div>
     </motion.div>
   )
@@ -674,37 +743,71 @@ function Summary({ s, g, onClose }) {
   const iconColor = s.ranOut ? 'var(--dim)' : acc >= 80 ? 'var(--gold)' : 'var(--op-add)'
   const isChallenge = s.kind === 'challenge' && s.target > 0
   const rank = isChallenge ? rankFor(s.score, s.target) : null
+  const isHighRank = rank && (rank.key === 'S' || rank.key === 'A')
+  const confettiColors = ['#ffd060','#ff9f6b','#3ec98a','#8d7bff','#ff7a6b','#5ec9ff','#ff85c0','#ffc86b']
 
   return (
     <div className="screen" style={{ justifyContent: 'center' }}>
       {isChallenge ? (
-        <motion.div className="rank-reveal"
-          initial={{ scale: 0.2, opacity: 0, rotate: -12 }} animate={{ scale: 1, opacity: 1, rotate: 0 }}
-          transition={{ type: 'spring', stiffness: 220, damping: 14 }}>
-          <div className="rank-badge" style={{ '--rk': rank.color }}>
+        <motion.div className="rank-reveal" style={{ position: 'relative' }}
+          initial={{ scale: 0.15, opacity: 0, rotate: -15, filter: 'blur(6px)' }}
+          animate={{ scale: 1, opacity: 1, rotate: 0, filter: 'blur(0px)' }}
+          transition={{ type: 'spring', stiffness: 200, damping: 12, mass: .7 }}>
+          {/* Confetti burst for S/A ranks */}
+          {isHighRank && Array.from({ length: 24 }).map((_, i) => {
+            const angle = (i / 24) * Math.PI * 2
+            const dist = 80 + Math.random() * 60
+            return (
+              <motion.span key={i} style={{
+                position: 'absolute', top: '50%', left: '50%',
+                width: `${3 + Math.random() * 5}px`, height: `${3 + Math.random() * 5}px`,
+                borderRadius: Math.random() > .5 ? '50%' : '1px',
+                background: confettiColors[i % confettiColors.length],
+                pointerEvents: 'none', zIndex: 0,
+              }}
+                initial={{ x: 0, y: 0, opacity: 1, scale: 0, rotate: 0 }}
+                animate={{ x: Math.cos(angle) * dist, y: Math.sin(angle) * dist, opacity: 0, scale: 1, rotate: Math.random() * 360 }}
+                transition={{ duration: 1.2, delay: .2 + i * .04, ease: 'easeOut' }} />
+            )
+          })}
+          <div className="rank-badge" style={{ '--rk': rank.color, position: 'relative', zIndex: 1 }}>
             <motion.span className="rank-ring" style={{ borderColor: rank.color }}
-              animate={{ scale: [1, 1.12, 1], opacity: [0.6, 0.15, 0.6] }}
+              animate={{ scale: [1, 1.15, 1], opacity: [0.6, 0.1, 0.6] }}
               transition={{ duration: 2, repeat: Infinity }} />
-            <span className="rank-letter" style={{ color: rank.color }}>{rank.key}</span>
+            <motion.span className="rank-letter" style={{ color: rank.color }}
+              initial={{ scale: 2 }} animate={{ scale: 1 }}
+              transition={{ type: 'spring', stiffness: 200, damping: 10, delay: .1 }}>
+              {rank.key}
+            </motion.span>
           </div>
-          <b className="rank-label" style={{ color: rank.color }}>{t(rank.labelKey, g.lang)}</b>
-          <div className="rank-score">
+          <motion.b className="rank-label" style={{ color: rank.color, position: 'relative', zIndex: 1 }}
+            initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: .25 }}>{t(rank.labelKey, g.lang)}</motion.b>
+          <motion.div className="rank-score" style={{ position: 'relative', zIndex: 1 }}
+            initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: .3 }}>
             <Icon name="ph:trophy-fill" size={16} color="var(--gold)" />
             <b>{s.score}</b><span>/ {s.target} {t('ch.points', g.lang)}</span>
-          </div>
+          </motion.div>
         </motion.div>
       ) : (
         <motion.div className="center" initial={{ scale: 0, rotate: -20 }} animate={{ scale: 1, rotate: 0 }} transition={{ type: 'spring', damping: 10 }}>
-          <Icon name={icon} size={72} color={iconColor} />
+          <motion.div
+            animate={{ scale: [1, 1.15, 1] }}
+            transition={{ duration: 1.5, repeat: Infinity, delay: .3 }}>
+            <Icon name={icon} size={72} color={iconColor} />
+          </motion.div>
         </motion.div>
       )}
-      <h1 className="center">
+      <motion.h1 className="center"
+        initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: .35 }}>
         {isChallenge ? t('ch.summary_title', g.lang)
           : s.kind === 'war' ? t('sum.war_done', g.lang)
           : s.kind === 'defense' ? (s.ranOut ? t('sum.def_lost', g.lang) : t('sum.def_won', g.lang))
           : s.ranOut ? t('sum.normal_rest', g.lang) : acc >= 80 ? t('sum.normal_great', g.lang) : t('sum.normal_ok', g.lang)}
-      </h1>
-      <p className="center">
+      </motion.h1>
+      <motion.p className="center"
+        initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: .38 }}>
         {isChallenge ? (s.score >= s.target
             ? t('ch.summary_won', g.lang)
             : t('ch.summary_lost', g.lang))
@@ -712,30 +815,41 @@ function Summary({ s, g, onClose }) {
           : s.kind === 'defense' ? (s.ranOut ? t('sum.def_lost_body', g.lang) : t('sum.def_won_body', g.lang))
           : s.ranOut ? t('sum.normal_rest_body', g.lang)
           : acc >= 80 ? t('sum.normal_great_body', g.lang) : t('sum.normal_ok_body', g.lang)}
-      </p>
-      <div className="grid g3">
-        <div className="stat">
+      </motion.p>
+      <motion.div className="grid g3"
+        initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: .4 }}>
+        <motion.div className="stat"
+          initial={{ scale: .8 }} animate={{ scale: 1 }}
+          transition={{ delay: .44, type: 'spring', stiffness: 300 }}>
           <Icon name="ph:star-fill" size={20} color="var(--gold)" style={{ margin: '0 auto 4px' }} />
           <b ref={ref}>{g.reducedMotion ? s.xp : 0}</b><span>XP</span>
-        </div>
-        <div className="stat">
+        </motion.div>
+        <motion.div className="stat"
+          initial={{ scale: .8 }} animate={{ scale: 1 }}
+          transition={{ delay: .5, type: 'spring', stiffness: 300 }}>
           <Icon name="ph:check-circle-fill" size={20} color="var(--green)" style={{ margin: '0 auto 4px' }} />
           <b>{s.correct}/{s.problems}</b><span>{t('sum.correct', g.lang)}</span>
-        </div>
-        <div className="stat">
+        </motion.div>
+        <motion.div className="stat"
+          initial={{ scale: .8 }} animate={{ scale: 1 }}
+          transition={{ delay: .56, type: 'spring', stiffness: 300 }}>
           <b className="row center-x">
             {s.kind === 'war'
               ? <><Icon name="star" size={16} color="var(--gold)" />{s.stars}</>
               : <><Icon name="zap" size={16} color="var(--gold)" />{g.streak}</>}
           </b>
           <span>{s.kind === 'war' ? t('sum.war_stars', g.lang) : t('home.streak', g.lang)}</span>
-        </div>
-      </div>
-      <div className="card center">
+        </motion.div>
+      </motion.div>
+      <motion.div className="card center"
+        initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: .6 }}>
         <p>{t('sum.time', g.lang)}: <b style={{ color: 'var(--ink)' }}>{Math.floor(s.seconds / 60)} {t('sum.minutes', g.lang)} {s.seconds % 60} {t('sum.seconds', g.lang)}</b></p>
-      </div>
+      </motion.div>
       <div className="grow" />
-      <button className="btn" onClick={onClose}>{t('sum.back', g.lang)}</button>
+      <motion.button className="btn" onClick={onClose}
+        initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: .65 }}>
+        {t('sum.back', g.lang)}
+      </motion.button>
     </div>
   )
 }
@@ -817,13 +931,25 @@ export default function App() {
   const [showSettings, setShowSettings] = useState(false)
   const [showBrief, setShowBrief] = useState(false)
   const [loadingSession, setLoadingSession] = useState(false)
-  const [showPomodoro, setShowPomodoro] = useState(false)
+  const [showFocusPicker, setShowFocusPicker] = useState(false)
   const [notif, setNotif] = useState(null) // {type, title, body, actions}
 
   useEffect(() => { document.body.classList.toggle('dyslexic', !!g.dyslexic) }, [g.dyslexic])
   useEffect(() => { document.body.dataset.skin = g.skin || '' }, [g.skin])
   // Auto-dismiss notif kecuali ada actions (konfirmasi menunggu klik user)
   useEffect(() => { if (notif && !notif.actions) { const t = setTimeout(() => setNotif(null), 4200); return () => clearTimeout(t) } }, [notif])
+  // Lock body scroll when any modal/sheet is open
+  useEffect(() => {
+    const locked = showSettings || picker !== null || showFocusPicker || showBrief || view === 'session' || view === 'summary'
+    document.documentElement.style.overflow = locked ? 'hidden' : ''
+    document.body.style.overflow = locked ? 'hidden' : ''
+    document.body.style.touchAction = locked ? 'none' : ''
+    return () => {
+      document.documentElement.style.overflow = ''
+      document.body.style.overflow = ''
+      document.body.style.touchAction = ''
+    }
+  }, [showSettings, picker, showFocusPicker, showBrief, view])
 
   // Cek koneksi server AI sekali saat aplikasi terbuka
   useEffect(() => { checkAiOnline() }, [])
@@ -835,11 +961,9 @@ export default function App() {
     return () => { alive = false }
   }, [g.onboarded, g.plan?.day, g.level]) // eslint-disable-line
 
-  const start = async (kind, domain, node) => {
+  const start = async (kind, domain, node, focusMin) => {
     const ch = g.plan?.challenge
     const curEnergy = energyNow(g)
-    // Energi bukan gerbang, tapi katalis: kalau punya energi, sesi ini dapat bonus 1.5× XP.
-    // Tanpa energi tetap bisa main — cuma XP normal.
     const useEnergy = kind === 'normal' && curEnergy > 0
     const fresh = { ...g, hearts: heartsNow(g), heartsAt: Date.now(), combo: 0,
       energy: useEnergy ? curEnergy - 1 : curEnergy,
@@ -850,7 +974,8 @@ export default function App() {
         const count = g.plan?.coach?.sessionCount
         return { kind: 'normal', title: t('session.daily_training', g.lang), mult: useEnergy ? 1.5 : 1, problems: buildSession(fresh, g.goalMin, g.plan?.coach?.focus || [], count ? { ...opts, count } : opts) }
       },
-      challenge: () => ({ kind: 'challenge', title: ch.nameKey ? t(ch.nameKey, g.lang) : ch.title, mult: ch.mult, problems: buildSession(fresh, 0, [], { count: ch.count, domain: ch.domain, variantBias: ch.variantBias }) }),
+      challenge: () => ({ kind: 'challenge', title: ch.nameKey ? t(ch.nameKey, g.lang) : ch.title, mult: ch.mult, problems: buildSession(fresh, 0, [], { count: ch.count, domain: ch.domainBias || ch.domain, variantBias: ch.variantBias, levelBias: ch.levelBias }) }),
+      focus: () => ({ kind: 'focus', title: tf('home.focus_title', g.lang, { n: focusMin }), mult: ch.mult, focusMinutes: focusMin, problems: buildSession(fresh, 0, [], { count: Math.round(focusMin * 1.2), variantBias: 'word' }) }),
       war: () => ({ kind: 'war', title: t('session.clan_war', g.lang), mult: 1, problems: buildSession(fresh, 0, [], { count: 20, variantSeed: 7 }) }),
       defense: () => ({ kind: 'defense', title: t('session.kingdom_defense', g.lang), mult: 1, hp: 60 + Object.values(buildingLevels(g)).reduce((a, b) => a + b, 0) * 20, problems: buildSession(fresh, 0, [], { count: 15, variantSeed: 3 }) }),
       aipath: () => ({
@@ -861,11 +986,12 @@ export default function App() {
     const plan = plans[kind]()
     setG(fresh)
     setPicker(null)
+    setShowFocusPicker(false)
 
-    // Challenge: coba AI dulu buat soal yang lebih variatif
-    if (kind === 'challenge') {
+    // Challenge / Focus: coba AI dulu buat soal yang lebih variatif
+    if (kind === 'challenge' || kind === 'focus') {
       setLoadingSession(true)
-      const aiProblems = await challengeProblems(ch.count, fresh.level, ch.domain)
+      const aiProblems = await challengeProblems(plan.problems.length, fresh.level, ch?.domain)
       if (aiProblems?.length) {
         // AI soal sudah termasuk teks variatif — langsung pakai
         setLoadingSession(false)
@@ -910,46 +1036,26 @@ export default function App() {
       return next
     })
     if (s.kind === 'war' && loggedIn()) api.warSession(s.stars).catch(() => {})
-    // Mission sounds — challenge only
-    if (s.kind === 'challenge') {
+    // Mission sounds — challenge & focus
+    if (s.kind === 'challenge' || s.kind === 'focus') {
       const won = s.target > 0 && s.score >= s.target
       if (won) sfx.missionSuccess()
       else sfx.missionFailed()
     }
-    setSummary(s)
-    setView('summary')
-  }
-
-  const handlePomodoroDone = (result) => {
-    if (result.quit) {
-      // User quit early — deduct XP
+    // Focus bonus: +XP for completed focus session
+    if (s.focusCompleted && s.focusMinutes) {
+      const bonusXp = Math.round(s.focusMinutes * 2)
       setG((cur) => {
-        const penalty = result.penalty || 50
-        const next = { ...cur, xp: Math.max(0, cur.xp - penalty) }
-        // Track pomodoro attempt
-        const d = dayKey()
-        const day = { ...(cur.days[d] || { sec: 0, problems: 0, correct: 0, xp: 0, fast: 0, maxCombo: 0, dom: {}, form: {}, goalMet: false }) }
-        next.days = { ...cur.days, [d]: { ...day, sec: day.sec + Math.round(result.seconds || 0) } }
-        push(next)
-        return next
-      })
-      sfx.wrong()
-    } else {
-      // Completed pomodoro — give bonus XP
-      const bonusXp = Math.round((result.durationMin || 15) * 2)
-      setG((cur) => {
-        let next = { ...cur, xp: cur.xp + bonusXp, coins: cur.coins + Math.round(bonusXp / 4), sessions: cur.sessions + 1 }
-        const d = dayKey()
-        const day = { ...(cur.days[d] || { sec: 0, problems: 0, correct: 0, xp: 0, fast: 0, maxCombo: 0, dom: {}, form: {}, goalMet: false }) }
-        next.days = { ...cur.days, [d]: { ...day, sec: day.sec + Math.round(result.seconds || 0), xp: day.xp + bonusXp } }
+        const next = { ...cur, xp: cur.xp + bonusXp, coins: cur.coins + Math.round(bonusXp / 4), sessions: cur.sessions + 1 }
         push(next)
         return next
       })
       sfx.levelup()
       bigWin()
-      setNotif({ type: 'success', title: t('pomo.notif_title', g.lang), body: tf('pomo.notif_body', g.lang, { n: result.durationMin, xp: bonusXp }), icon: 'ph:trophy-fill' })
+      setNotif({ type: 'success', title: t('pomo.notif_title', g.lang), body: tf('pomo.notif_body', g.lang, { n: s.focusMinutes, xp: bonusXp }), icon: 'ph:trophy-fill' })
     }
-    setView('main')
+    setSummary(s)
+    setView('summary')
   }
 
   if (!g.onboarded)
@@ -970,7 +1076,6 @@ export default function App() {
   if (view === 'auth') return <Auth g={g} setG={setG} onClose={() => setView('main')} />
   if (view === 'aipath') return <AIPath g={g} onStart={(node) => start('aipath', null, node)} onClose={() => setView('main')} />
   if (view === 'shop') return <Shop g={g} setG={setG} onClose={() => setView('main')} />
-  if (view === 'pomodoro') return <Pomodoro g={g} onDone={handlePomodoroDone} onClose={() => setView('main')} />
   if (view === 'learn') return <Learn g={g} />
 
   const screens = {
@@ -979,7 +1084,7 @@ export default function App() {
       onChallengePicker={() => setShowBrief(true)}
       onOpenPath={() => setView('aipath')}
       onOpenShop={() => setView('shop')}
-      onPomodoro={() => setView('pomodoro')}
+      onFocus={() => setShowFocusPicker(true)}
       onSettings={() => setShowSettings(true)} />,
     progress: <Progress g={g} />,
     kingdom: <Kingdom g={g} setG={setG} />,
@@ -1013,6 +1118,51 @@ export default function App() {
         )}
       </AnimatePresence>
 
+      {/* Focus duration picker — muncul saat user tap kartu Focus */}
+      <AnimatePresence>
+        {showFocusPicker && (
+          <>
+            <motion.div className="sheet-backdrop" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+              onClick={() => setShowFocusPicker(false)} />
+            <motion.div className="focus-sheet"
+              initial={{ opacity: 0, y: 80, filter: 'blur(3px)' }}
+              animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
+              exit={{ opacity: 0, y: 80, filter: 'blur(3px)' }}
+              transition={{ type: 'spring', stiffness: 320, damping: 30, mass: .9 }}>
+              <motion.h3 initial={{ opacity: 0, y: -6 }} animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: .06 }}>{t('pomo.setup_title', g.lang)}</motion.h3>
+              <motion.p style={{ fontSize: 13, color: 'var(--dim)', marginBottom: 14, textAlign: 'center' }}
+                initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: .1 }}>
+                {t('home.focus_body', g.lang)}
+              </motion.p>
+              <div className="focus-grid">
+                {FOCUS_DURATIONS.map((d, i) => (
+                  <motion.button key={d.min} whileTap={{ scale: 0.93 }}
+                    className="focus-card" style={{ '--fc': d.color }}
+                    initial={{ opacity: 0, y: 24, scale: .9 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    transition={{ delay: .12 + i * .08, type: 'spring', stiffness: 340, damping: 24 }}
+                    onClick={() => { setShowFocusPicker(false); start('focus', null, null, d.min) }}>
+                    <motion.div
+                      animate={{ scale: [1, 1.1, 1] }}
+                      transition={{ duration: 2, repeat: Infinity, delay: i * .4 }}>
+                      <Icon name={d.icon} size={36} color={d.color} />
+                    </motion.div>
+                    <b>{d.min}{t('pomo.min_abbr', g.lang)}</b>
+                    <span>{tf('pomo.dur_label', g.lang, { n: d.min })}</span>
+                  </motion.button>
+                ))}
+              </div>
+              <motion.button className="btn ghost" style={{ marginTop: 12 }}
+                initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: .4 }}
+                onClick={() => setShowFocusPicker(false)}>
+                {t('pomo.later', g.lang)}
+              </motion.button>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+
       {/* Briefing tantangan — muncul sebelum sesi dimulai */}
       <AnimatePresence>
         {showBrief && g.plan?.challenge && (
@@ -1028,8 +1178,10 @@ export default function App() {
           <motion.div className="modal-backdrop" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
             onClick={() => setShowSettings(false)}>
             <motion.div className="modal-panel" onClick={(e) => e.stopPropagation()}
-              initial={{ opacity: 0, scale: 0.94, y: 16 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.94, y: 16 }}
-              transition={{ type: 'spring', stiffness: 340, damping: 30 }}>
+              initial={{ opacity: 0, scale: .9, y: 24, filter: 'blur(4px)' }}
+              animate={{ opacity: 1, scale: 1, y: 0, filter: 'blur(0px)' }}
+              exit={{ opacity: 0, scale: .92, y: 16, filter: 'blur(2px)' }}
+              transition={{ type: 'spring', stiffness: 340, damping: 30, mass: .85 }}>
               <Settings g={g} setG={setG} onClose={() => setShowSettings(false)}
                 onSignIn={() => { setShowSettings(false); setView('auth') }} />
             </motion.div>

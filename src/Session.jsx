@@ -91,10 +91,41 @@ export default function Session({ g, setG, plan, onDone, onQuit }) {
   const useTimer = plan.kind === 'normal' || plan.kind === 'challenge'
   const useHearts = useTimer
   const isChallenge = plan.kind === 'challenge'
+  const isFocus = plan.kind === 'focus'
   const hearts = g.hearts
   const combo = g.combo || 0
   const p = list[i]
   const target = challengeTarget(list.length)
+
+  // ── Focus timer (Pomodoro) ──────────────────────────────────────────
+  const focusTotal = (plan.focusMinutes || 0) * 60
+  const [focusLeft, setFocusLeft] = useState(focusTotal)
+  const focusRef = useRef(null)
+
+  useEffect(() => {
+    if (!isFocus || focusTotal <= 0) return
+    focusRef.current = setInterval(() => {
+      setFocusLeft((t) => Math.max(0, t - 1))
+    }, 1000)
+    return () => clearInterval(focusRef.current)
+  }, [isFocus, focusTotal])
+
+  // Auto-end when focus timer hits 0
+  useEffect(() => {
+    if (!isFocus || focusLeft > 0 || focusTotal <= 0) return
+    clearInterval(focusRef.current)
+    clearInterval(timerRef.current)
+    const t = tallyRef.current
+    const seconds = Math.round((Date.now() - t.started) / 1000)
+    onDone({
+      kind: plan.kind, seconds, problems: t.problems, correct: t.correct, xp: t.xp,
+      ranOut: false, hpLeft: 99, score, target,
+      focusCompleted: true, focusMinutes: plan.focusMinutes,
+    })
+  }, [focusLeft, isFocus, focusTotal]) // eslint-disable-line
+
+  const focusPct = focusTotal > 0 ? focusLeft / focusTotal : 0
+  const focusColor = focusLeft <= 60 ? 'var(--red)' : focusLeft <= focusTotal * 0.25 ? 'var(--gold)' : 'var(--green)'
 
   useEffect(() => { startRef.current = Date.now() }, [i])
 
@@ -433,6 +464,21 @@ export default function Session({ g, setG, plan, onDone, onQuit }) {
         </div>
       </div>
 
+      {/* ── Focus timer bar ────────────────────────────────────────────── */}
+      {isFocus && focusTotal > 0 && (
+        <div className="focus-timer-bar">
+          <div className="focus-timer-track">
+            <motion.i style={{ width: `${focusPct * 100}%`, background: focusColor }}
+              animate={{ width: `${focusPct * 100}%` }}
+              transition={{ duration: 1, ease: 'linear' }} />
+          </div>
+          <span className="focus-timer-num" style={{ color: focusColor }}>
+            <Icon name="ph:timer-fill" size={12} />
+            {Math.floor(focusLeft / 60)}:{(focusLeft % 60).toString().padStart(2, '0')}
+          </span>
+        </div>
+      )}
+
       {/* ── HUD tantangan: skor + pengganda combo + target ───────────────── */}
       {isChallenge && (
         <div className="ch-hud">
@@ -635,33 +681,55 @@ export default function Session({ g, setG, plan, onDone, onQuit }) {
             onClick={() => setShowHelp(false)}>
             <motion.div className="help-sheet" onClick={(e) => e.stopPropagation()}
               initial={{ y: '100%' }} animate={{ y: 0 }} exit={{ y: '100%' }}
-              transition={{ type: 'spring', stiffness: 340, damping: 34 }}>
+              transition={{ type: 'spring', stiffness: 300, damping: 32, mass: .9 }}>
               <span className="help-grip" />
-              <div className="between">
+              <motion.div className="between"
+                initial={{ opacity: 0, y: -6 }} animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: .08 }}>
                 <div className="row" style={{ gap: 8 }}>
-                  <Icon name="ph:lifebuoy-fill" size={20} color="var(--gold)" />
+                  <motion.div
+                    animate={{ rotate: [0, -10, 10, 0] }}
+                    transition={{ duration: 2, repeat: Infinity, delay: .3 }}>
+                    <Icon name="ph:lifebuoy-fill" size={22} color="var(--gold)" />
+                  </motion.div>
                   <b style={{ fontSize: 16, color: 'var(--ink)' }}>{t('session.need_help', g.lang)}</b>
                 </div>
-                <button className="pill icon-btn" onClick={() => setShowHelp(false)} aria-label="Tutup">
+                <motion.button className="pill icon-btn" onClick={() => setShowHelp(false)} aria-label="Tutup"
+                  whileHover={{ scale: 1.08 }} whileTap={{ scale: .9 }}>
                   <Icon name="x" size={16} />
-                </button>
-              </div>
+                </motion.button>
+              </motion.div>
 
               {lifelines.length === 0 ? (
-                <div className="help-empty">
-                  <Icon name="ph:bag-fill" size={36} color="var(--dim)" />
+                <motion.div className="help-empty"
+                  initial={{ opacity: 0, scale: .9 }} animate={{ opacity: 1, scale: 1 }}
+                  transition={{ delay: .15 }}>
+                  <motion.div
+                    animate={{ y: [0, -6, 0] }}
+                    transition={{ duration: 1.5, repeat: Infinity }}>
+                    <Icon name="ph:bag-fill" size={40} color="var(--dim)" />
+                  </motion.div>
                   <p>{t('session.help_empty', g.lang)}</p>
-                </div>
+                </motion.div>
               ) : (
                 <>
-                  <p style={{ fontSize: 12 }}>{t('session.help_hint', g.lang)}</p>
+                  <motion.p style={{ fontSize: 12 }}
+                    initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+                    transition={{ delay: .1 }}>{t('session.help_hint', g.lang)}</motion.p>
                   <div className="help-list">
-                    {lifelines.map((it) => (
+                    {lifelines.map((it, i) => (
                       <motion.button key={it.id} className="help-item" disabled={!!it.block}
-                        whileTap={it.block ? undefined : { scale: 0.97 }}
+                        initial={{ opacity: 0, x: -20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: .12 + i * .07, type: 'spring', stiffness: 300, damping: 24 }}
+                        whileTap={it.block ? undefined : { scale: .97 }}
                         onClick={() => { it.run(); setShowHelp(false) }}>
-                        <span className="help-item-icon" style={{ background: `${it.color}1f`, color: it.color }}>
-                          <Icon name={it.icon} size={20} />
+                        <span className="help-item-icon" style={{ background: `${it.color}1a`, color: it.color }}>
+                          <motion.div
+                            animate={{ scale: [1, 1.15, 1] }}
+                            transition={{ duration: 1.8, repeat: Infinity, delay: i * .5 }}>
+                            <Icon name={it.icon} size={20} />
+                          </motion.div>
                         </span>
                         <span className="help-item-text">
                           <b>{t(it.nameKey, g.lang)}</b>
@@ -685,23 +753,42 @@ export default function Session({ g, setG, plan, onDone, onQuit }) {
             initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
             onClick={() => setShowQuit(false)}>
             <motion.div className="ss-quit-modal"
-              initial={{ opacity: 0, scale: 0.9, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.9, y: 20 }}
+              initial={{ opacity: 0, scale: .85, y: 24, filter: 'blur(3px)' }}
+              animate={{ opacity: 1, scale: 1, y: 0, filter: 'blur(0px)' }}
+              exit={{ opacity: 0, scale: .88, y: 16, filter: 'blur(2px)' }}
               onClick={(e) => e.stopPropagation()}
-              transition={{ type: 'spring', stiffness: 350, damping: 28 }}>
-              <div className="ss-quit-icon"><Icon name="ph:door-open-fill" size={44} color="var(--gold)" /></div>
-              <h2>{t('session.quit_title', g.lang)}</h2>
-              <p>{tf('session.quit_body', g.lang, { n: QUIT_XP_PENALTY })}</p>
-              <div className="ss-quit-btns">
-                <button className="btn ghost" onClick={() => setShowQuit(false)}>
+              transition={{ type: 'spring', stiffness: 340, damping: 28, mass: .85 }}>
+              <motion.div className="ss-quit-icon"
+                initial={{ scale: 0, rotate: -30 }} animate={{ scale: 1, rotate: 0 }}
+                transition={{ type: 'spring', stiffness: 350, damping: 16, delay: .05 }}>
+                <motion.div style={{
+                  position: 'absolute', inset: -8, borderRadius: '50%',
+                  background: 'radial-gradient(circle, rgba(255,122,107,.15) 0%, transparent 70%)',
+                }} animate={{ scale: [1, 1.2, 1], opacity: [.5, .15, .5] }}
+                  transition={{ duration: 2, repeat: Infinity }} />
+                <motion.div
+                  animate={{ x: [0, 3, -3, 0] }}
+                  transition={{ duration: .5, delay: .2 }}>
+                  <Icon name="ph:door-open-fill" size={36} color="var(--gold)" />
+                </motion.div>
+              </motion.div>
+              <motion.h2 initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: .1 }}>{t('session.quit_title', g.lang)}</motion.h2>
+              <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+                transition={{ delay: .14 }}>{tf('session.quit_body', g.lang, { n: QUIT_XP_PENALTY })}</motion.p>
+              <motion.div className="ss-quit-btns"
+                initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: .18 }}>
+                <motion.button className="btn ghost" onClick={() => setShowQuit(false)}
+                  whileHover={{ scale: 1.02 }} whileTap={{ scale: .96 }}>
                   {t('session.quit_stay', g.lang)}
-                </button>
-                <button className="btn soft" onClick={confirmQuit}
+                </motion.button>
+                <motion.button className="btn soft" onClick={confirmQuit}
+                  whileHover={{ scale: 1.02 }} whileTap={{ scale: .96 }}
                   style={{ background: 'linear-gradient(180deg, #4a2020, #2a1010)', border: '1px solid #6a3030', boxShadow: '0 4px 0 #1a0a0a' }}>
                   {tf('session.quit_go', g.lang, { n: QUIT_XP_PENALTY })}
-                </button>
-              </div>
+                </motion.button>
+              </motion.div>
             </motion.div>
           </motion.div>
         )}

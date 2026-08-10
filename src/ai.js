@@ -56,12 +56,12 @@ export async function flavorSession(problems, g, kind = 'normal') {
 }
 
 // Generate soal challenge dari AI — server yang ngeramu angka & jawaban.
-// Kalau gagal/timeout/belum login, kembalikan null (pemanggil jatuh ke buildSession).
+// Challenge selalu coba AI — lebih seru, meski belum login.
+// Kalau gagal/timeout, kembalikan null (pemanggil jatuh ke buildSession).
 export async function challengeProblems(count, level, domain) {
-  if (!loggedIn()) return null
   try {
     const { problems } = await withTimeout(
-      api.challengeProblems({ count, level, domain }), 9000,
+      api.challengeProblems({ count, level, domain }), 12000,
     )
     return problems || null
   } catch {

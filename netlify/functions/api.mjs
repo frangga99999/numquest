@@ -245,10 +245,14 @@ async function flavorHandler(problems, g) {
   if (!plain.length) return { variants: {} }
   try {
     const out = await chat(
-      `Tulis ulang tiap soal hitung jadi kalimat cerita pendek yang seru dan bervariasi.
-ATURAN KETAT: angka dan operasi (+ − × :) di tiap soal HARUS sama persis seperti aslinya.
-Sesuaikan kerumitan kalimat dengan tingkat "${g.level}". Gaya santai Jakarta.
-Balas array dengan id dan panjang SAMA PERSIS seperti soal yang diberikan.`,
+      `Ubah tiap soal hitung polos jadi kalimat yang SERU & BERVARIASI — kayak misi di game, bukan PR.
+
+ATURAN KETAT:
+- Angka dan operasi (+ − × :) HARUS SAMA PERSIS seperti aslinya — jangan diubah sedikit pun.
+- Setiap soal harus KONTEKS BERBEDA: gaming, masak, olahraga, traveling, musik, sci-fi, dagang, kucing, cuaca, konser — jangan ulangi tema.
+- Gunakan bahasa seru kayak ngomong ke temen, santai Jakarta.
+- Maks 20 kata per soal. Akhiri dengan pertanyaan yang jelas.
+- Balas array dengan id dan jumlah SAMA PERSIS seperti input.`,
       { tingkat: g.level, soal: plain.map((p) => ({ id: p.key, teks: p.text })) },
       '{"soal":[{"id":"...","teks":"..."}]}',
     )
@@ -276,6 +280,115 @@ async function explainHandler(problem, g) {
   } catch (e) { return { explanation: '', error: String(e.message).slice(0, 160) } }
 }
 
+// ── Challenge problem generation — AI penuh ──────────────────────────────────
+// Generate soal matematika yang variatif, menantang, dan tidak monoton.
+// AI menghasilkan soal dari nol: teks cerita, teka-teki, hitung cepat, dll.
+const DOMAIN_INFO = {
+  add: { name: 'penjumlahan', op: '+', icon: 'ph:plus-circle-fill' },
+  sub: { name: 'pengurangan', op: '−', icon: 'ph:minus-circle-fill' },
+  mul: { name: 'perkalian', op: '×', icon: 'ph:x-circle-fill' },
+  div: { name: 'pembagian', op: ':', icon: 'ph:divide-fill' },
+  ns:  { name: 'pemahaman angka', op: null, icon: 'ph:number-circle-one-fill' },
+  est: { name: 'estimasi & pembulatan', op: null, icon: 'ph:target-fill' },
+  frac:{ name: 'pecahan & desimal', op: null, icon: 'ph:percent-fill' },
+  mix: { name: 'campuran', op: null, icon: 'ph:circles-three-plus-fill' },
+  logic:{ name: 'logika & pola', op: null, icon: 'ph:brain-fill' },
+}
+
+const LEVEL_GUIDE = {
+  easy: 'Angka kecil (1-99), satu langkah, operasi dasar. Jawaban 1-99.',
+  mid:  'Angka menengah (10-999), bisa dua langkah ringan, pecahan simpel (½,¼), desimal. Jawaban 1-999.',
+  adv:  'Angka besar (100-9999), multi-langkah, perbandingan, pola kompleks, logika. Jawaban 1-9999.',
+}
+
+const CONTEXT_POOL = [
+  'game RPG (level-up, damage, HP, loot)', 'kuliner (resep, porsi, harga)', 'olahraga (skor, statistik)',
+  'musik (streaming, playlist)', 'teknologi (coding, gadget, battery)', 'travel (jarak, tiket, waktu)',
+  'dunia misteri (detektif, kode rahasia)', 'bisnis (jualan, diskon, untung)', 'alam (hewan, planet, cuaca)',
+  'sci-fi (alien, roket, dimensi paralel)', 'sekolah kocak (nilai, PR, ekskul)', 'esport (turnamen, rank, skin)',
+]
+
+async function challengeProblemsHandler(count, level, domain) {
+  if (!KEY) return { problems: null, error: 'AI_KEY belum diatur' }
+
+  const domainList = domain ? [domain] : ['add', 'sub', 'mul', 'div', 'ns', 'est', 'logic', 'logic']
+  const shuffled = domainList.sort(() => Math.random() - 0.5)
+  const picked = []
+
+  // Rotasi domain + format biar tiap soal beda rasa
+  for (let i = 0; i < count; i++) {
+    const d = shuffled[i % shuffled.length]
+    const info = DOMAIN_INFO[d] || DOMAIN_INFO.add
+    picked.push({ i, domain: d, domainName: info.name, op: info.op, icon: info.icon })
+  }
+
+  try {
+    const out = await chat(
+      `Kamu DESAINER QUEST di game RPG matematika bernama "NumQuest". Bikin soal yang bikin pemain GRINDING karena SERU — bukan PR matematika membosankan.
+
+${TONE}
+
+🎯 LEVEL: ${LEVEL_NAME[level]}
+${LEVEL_GUIDE[level]}
+${domain ? `🎯 FOKUS: ${DOMAIN_INFO[domain]?.name || domain}.` : `🎯 Domain rotasi: ${domainList.map((d) => DOMAIN_INFO[d]?.name).join(', ')}.`}
+
+📚 KONTEKS WAJIB BERVARIASI (pilih dari daftar ini, JANGAN ulangi):
+${CONTEXT_POOL.join(' | ')}
+
+━━━ FORMAT SOAL (ROTASI KETAT — jangan dua tipe sama berturut!) ━━━
+
+🔢 HITUNG KREATIF:
+1. STORY — Cerita mini 2 kalimat seru (pilih konteks dari daftar atas!), akhiri pertanyaan hitung. BUKAN cuma "Andi beli X, Budi beli Y."
+2. PUZZLE — Tebak angka: "Aku mikirin angka. Operasi rahasia → hasilnya segini. Cari angkanya!" Bikin pemain gregetan.
+3. QUICK — Hitung naratif pendek & catchy. Twist menarik: diskon dobel, combo multiplier, crit damage, buff stacking.
+4. COMPARE — "Mana lebih gede?" Bandingkan dua ekspresi dengan TWIST: kadang yang keliatan kecil ternyata gede.
+5. MISSING — Cari angka/operasi hilang dalam persamaan. Bisa satu atau dua simbol hilang.
+6. ESTIMATE — Perkirakan! Kasih 4 pilihan. Jangan terlalu gampang ditebak — selisih pilihan jangan terlalu jauh.
+
+🧠 LOGIKA & POLA (MINIMAL 35% soal):
+7. PATTERN — Lanjutkan pola: aritmetika, geometri, Fibonacci, kuadrat, segitiga, pola jam, pola alfabet. JANGAN cuma "2,4,6,8,?" — itu terlalu gampang.
+8. DEDUCTION — Logika posisi/urutan/perbandingan. "Siapa di mana?" Jawaban = nomor posisi (1,2,3,dst).
+9. VARIABLE — Trace kode: "x=3, y=7. x=x+y, y=x-y, x=x-y. Berapa nilai akhir x?" — ala swap variable programming.
+10. CONDITIONAL — If-then logic: "N=12. Jika N genap→N/2, jika ganjil→N×3+1. Ulangi 3x. Hasil?" — ala Collatz.
+11. CRYPTARITHM — Huruf=gambar digit: "AB + BA = 88, A>B. Berapa A×B?" atau "AA + BB = CC." Coba-coba logis.
+12. LATERAL — Puzzle mikir miring: "1=3, 2=3, 3=5, 4=4, 5=4, 6=?" (hitung huruf: enam=4). Atau jam tangan, atau korek api.
+13. GRID — Logika tabel: "3-4 orang, 3-4 atribut. Beberapa clue. Siapa/skor berapa?" Jawaban HARUS angka.
+
+⚡ ATURAN KETAT:
+- SETIAP soal formatnya HARUS BEDA. Jangan sampai dua soal STORY berturut-turut.
+- Minimal 35% soal dari tipe LOGIKA & POLA (format 7-13). Pemain suka mikir!
+- KONTEKS dari daftar di atas, maksimal 2 soal pakai konteks yang sama.
+- JAWABAN harus angka bulat positif (1-9999). Periksa ulang — jangan sampai salah hitung!
+- Jawaban JANGAN semua kecil (<50) atau semua besar (>500). Variasikan rentang jawabannya.
+- Soal bikin PENSARAN — pemain harus mikir "wah cerdas juga nih soal."
+- Bahasa santai Jakarta, natural, GAUL tapi bukan alay. Maks 30 kata.
+- Kalau teks mengandung pilihan (format 6/12/13), sebutkan pilihannya di teks.`,
+      { jumlah: count, tingkat: level, domain, daftar: picked.map((p, i) => ({ index: i, domain: p.domainName, operasi: p.op, wajibFormat: ['story', 'puzzle', 'quick', 'compare', 'missing', 'estimate', 'pattern', 'deduction', 'variable', 'conditional', 'cryptarithm', 'lateral', 'grid'][i % 13] })) },
+      `{"soal":[{"domain":"add","teks":"...","jawaban":42,"ikon":"ph:plus-circle-fill"}]}`,
+      { timeout: 30_000, maxTokens: 4096 },
+    )
+
+    const problems = (out.soal || []).map((item, idx) => {
+      const p = picked[idx] || picked[0] || { domain: 'add', icon: 'ph:plus-circle-fill' }
+      const answer = Number(item.jawaban)
+      if (!item.teks || !Number.isFinite(answer)) return null
+      return {
+        key: `ai-challenge:${idx}:${Date.now()}`,
+        text: str(item.teks, 200),
+        answer,
+        skill: `ai-${p.domain || 'add'}`,
+        domain: item.domain && DOMAINS[item.domain] ? item.domain : p.domain,
+        variant: 'word',
+        icon: item.ikon || p.icon || 'ph:plus-circle-fill',
+      }
+    }).filter(Boolean)
+
+    return { problems: problems.length >= 3 ? problems : null }
+  } catch (e) {
+    return { problems: null, error: String(e.message).slice(0, 160) }
+  }
+}
+
 // ── Router ──────────────────────────────────────────────────────────────────
 const ROUTES = {
   'GET /lessons': async (q) => {
@@ -283,7 +396,7 @@ const ROUTES = {
     const lang = q.lang === 'en' ? 'en' : 'id'
     return lessonsHandler(level, lang)
   },
-  'POST /learn/chat': async (body) => {
+  'POST /learn/chat': async (_q, body) => {
     const msg = String(body.message || '').trim().slice(0, 500)
     if (!msg) throw new Error('Pesan kosong')
     const topic = String(body.topic || '').slice(0, 200)
@@ -293,17 +406,23 @@ const ROUTES = {
     const lang = body.lang === 'en' ? 'en' : 'id'
     return learnChatHandler(g, msg, topic, history, lang)
   },
-  'GET /coach': async (_, body) => coachHandler(parseState(body)),
-  'GET /quests': async (_, body) => ({ quests: await questsHandler(parseState(body), today()) }),
-  'GET /challenge': async (_, body) => challengeHandler(parseState(body), today()),
-  'POST /problem/flavor': async (body) => {
+  'GET /coach': async (_q, body) => coachHandler(parseState(body)),
+  'GET /quests': async (_q, body) => ({ quests: await questsHandler(parseState(body), today()) }),
+  'GET /challenge': async (_q, body) => challengeHandler(parseState(body), today()),
+  'POST /problem/flavor': async (_q, body) => {
     const problems = Array.isArray(body.problems) ? body.problems.slice(0, 20) : []
     return flavorHandler(problems, parseState(body))
   },
-  'POST /problem/explain': async (body) => {
+  'POST /problem/explain': async (_q, body) => {
     const p = body.problem || {}
     if (typeof p.text !== 'string') throw new Error('problem.text wajib diisi')
     return explainHandler(p, parseState(body))
+  },
+  'POST /problem/challenge': async (_q, body) => {
+    const count = num(body.count, 5, 30, 12)
+    const level = ['easy', 'mid', 'adv'].includes(body.level) ? body.level : 'easy'
+    const domain = body.domain && DOMAINS[body.domain] ? body.domain : null
+    return challengeProblemsHandler(count, level, domain)
   },
 }
 

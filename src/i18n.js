@@ -17,6 +17,8 @@ const DICT = {
   'home.energy_out':      { id: 'Energi habis — tetap bisa latihan, XP normal', en: 'Energy depleted — you can still practice, normal XP' },
   'home.action_focus':    { id: 'Mode Fokus',  en: 'Focus Mode' },
   'home.action_focus_sub':{ id: 'Pomodoro',    en: 'Pomodoro' },
+  'home.focus_title':     { id: 'Fokus {n}mnt', en: '{n}min Focus' },
+  'home.focus_body':      { id: 'Pilih durasi fokus. Kamu akan masuk tantangan + timer fokus.', en: 'Pick a focus duration. You\'ll enter a challenge with a focus timer.' },
   'home.action_shop_sub': { id: 'Item bantuan', en: 'Help items' },
   'home.action_ai_sub':   { id: 'Belajar AI',  en: 'Learn AI' },
   'home.action_path_foot':{ id: '{done}/{total} tuntas', en: '{done}/{total} done' },
@@ -377,6 +379,7 @@ const DICT = {
   'pomo.timer_pause':     { id: 'Jeda',                  en: 'Paused' },
   'pomo.start_fallback':  { id: 'Mulai fokus',           en: 'Start focus' },
   'pomo.min_abbr':        { id: ' mnt',                  en: ' min' },
+  'pomo.dur_label':       { id: 'Fokus {n} menit',      en: '{n} min focus' },
   // ── Panduan / Learn ───────────────────────
   'learn.title':        { id: 'Panduan',  en: 'Learn' },
   'learn.subtitle':     { id: 'Materi dirancang penuh gambar — biar paham konsepnya, bukan hafal rumusnya.', en: 'Every lesson is built around a picture — so you grasp the idea, not memorise a formula.' },
