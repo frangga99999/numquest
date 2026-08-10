@@ -1,11 +1,19 @@
 [build]
   command = "npm run build"
   publish = "dist"
+  functions = "netlify/functions"
 
 [build.environment]
-  # GANTI dengan URL server yang sudah di-deploy (lihat DEPLOY.md)
-  VITE_API = "https://numquest-api.onrender.com/api"
+  # Di production, panggil API lewat Netlify Functions (relatif)
+  VITE_API = "/api"
 
+# Rewrite /api/* ke Netlify Function — HARUS di atas SPA fallback
+[[redirects]]
+  from = "/api/*"
+  to = "/.netlify/functions/api"
+  status = 200
+
+# SPA fallback — semua rute lain ke index.html
 [[redirects]]
   from = "/*"
   to = "/index.html"
