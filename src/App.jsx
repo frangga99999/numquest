@@ -415,89 +415,125 @@ function Home({ g, setG, plan, onStartPicker, onChallengePicker, onOpenPath, onO
           <Icon name={prog >= 1 ? 'ph:plus-circle-fill' : 'ph:play-circle-fill'} size={24} />
           {prog >= 1 ? t('home.cta_bonus', g.lang) : t('home.cta_start', g.lang)}
         </GameButton>
-        <span className={'start-note' + (energyNow(g) > 0 ? ' hot' : '')}>
-          <Icon name="ph:flask-fill" size={13} color={energyNow(g) > 0 ? 'var(--green)' : 'var(--dim)'} />
-          {energyNow(g) > 0
-            ? <>{tf('home.energy_has', g.lang, { n: energyNow(g) })}</>
-            : <>{t('home.energy_out', g.lang)}</>}
-        </span>
+        {/* Visual energy orbs — ganti teks deskripsi */}
+        <div className="energy-pips">
+          {Array.from({ length: Math.min(5, energyNow(g)) }).map((_, i) => (
+            <motion.span key={i} className="energy-pip active"
+              initial={{ scale: 0 }} animate={{ scale: 1 }}
+              transition={{ delay: i * 0.1, type: 'spring', stiffness: 400 }}>
+              <Icon name="ph:flask-fill" size={15} color="#3ec98a" />
+            </motion.span>
+          ))}
+          {energyNow(g) === 0 && (
+            <span className="energy-empty">
+              <Icon name="ph:flask-fill" size={15} color="var(--dim)" />
+              <small style={{ color: 'var(--dim)', fontWeight: 600 }}>{t('home.energy_out', g.lang)}</small>
+            </span>
+          )}
+        </div>
       </div>
 
-      {/* Aksi cepat — 3 kartu sejajar */}
+      {/* Aksi cepat — 3 kartu game-HUD dengan ikon dominan */}
       <div className="quick-grid">
-        <motion.button className="quick-card quick-card--path" onClick={onOpenPath} whileTap={{ scale: 0.97 }}>
-          <span className="quick-icon" style={{ background: 'rgba(141,123,255,.12)', borderColor: 'rgba(141,123,255,.25)' }}>
-            <Icon name="ph:robot-fill" size={22} color="var(--violet)" />
-          </span>
+        <motion.button className="quick-card quick-card--path" onClick={onOpenPath} whileTap={{ scale: 0.96 }}>
+          <div className="qc-hero">
+            <span className="qc-hero-ring" style={{ borderColor: 'var(--violet)' }}>
+              <svg width="56" height="56" viewBox="0 0 56 56" className="qc-progress-ring">
+                <circle cx="28" cy="28" r="24" fill="none" stroke="rgba(255,255,255,.06)" strokeWidth="3" />
+                <motion.circle cx="28" cy="28" r="24" fill="none" stroke="var(--violet)" strokeWidth="3"
+                  strokeLinecap="round" strokeDasharray={`${(pathProgress(g).done / Math.max(1, pathProgress(g).total)) * 151} 151`}
+                  transform="rotate(-90 28 28)" initial={{ strokeDasharray: '0 151' }}
+                  animate={{ strokeDasharray: `${Math.max(2, (pathProgress(g).done / Math.max(1, pathProgress(g).total)) * 151)} 151` }}
+                  transition={{ duration: 1, ease: 'easeOut' }} />
+              </svg>
+              <Icon name="ph:robot-fill" size={24} color="var(--violet)" />
+            </span>
+          </div>
           <b>{t('path.card_title', g.lang)}</b>
-          <span className="quick-sub">{t('path.card_sub', g.lang)}</span>
-          <span className="quick-foot" style={{ color: 'var(--violet)' }}>
-            {pathProgress(g).done}/{pathProgress(g).total}
-          </span>
+          <span className="qc-metric" style={{ color: 'var(--violet)' }}>{pathProgress(g).done}/{pathProgress(g).total}</span>
         </motion.button>
 
-        <motion.button className="quick-card quick-card--pomo" onClick={onPomodoro} whileTap={{ scale: 0.97 }}>
-          <span className="quick-icon" style={{ background: 'rgba(255,159,107,.12)', borderColor: 'rgba(255,159,107,.25)' }}>
-            <Icon name="ph:brain-fill" size={22} color="#ff9f6b" />
-          </span>
+        <motion.button className="quick-card quick-card--pomo" onClick={onPomodoro} whileTap={{ scale: 0.96 }}>
+          <div className="qc-hero">
+            <span className="qc-hero-ring" style={{ borderColor: '#ff9f6b' }}>
+              <motion.div className="qc-pulse" animate={{ scale: [1, 1.08, 1] }} transition={{ duration: 2.5, repeat: Infinity }}>
+                <Icon name="ph:brain-fill" size={28} color="#ff9f6b" />
+              </motion.div>
+            </span>
+          </div>
           <b>{t('home.action_focus', g.lang)}</b>
-          <span className="quick-sub">{t('home.action_focus_sub', g.lang)}</span>
-          <span className="quick-foot" style={{ color: '#ff9f6b' }}>
-            <Icon name="ph:timer-fill" size={11} /> +XP
+          <span className="qc-metric" style={{ color: '#ff9f6b' }}>
+            <Icon name="ph:timer-fill" size={10} /> +XP
           </span>
         </motion.button>
 
-        <motion.button className="quick-card quick-card--shop" onClick={onOpenShop} whileTap={{ scale: 0.97 }}>
-          <span className="quick-icon" style={{ background: 'rgba(255,200,107,.12)', borderColor: 'rgba(255,200,107,.25)' }}>
-            <Icon name="ph:storefront-fill" size={22} color="#ffc86b" />
-          </span>
+        <motion.button className="quick-card quick-card--shop" onClick={onOpenShop} whileTap={{ scale: 0.96 }}>
+          <div className="qc-hero">
+            <span className="qc-hero-ring" style={{ borderColor: '#ffc86b' }}>
+              <span className="qc-coin-stack">
+                <Icon name="ph:coin-fill" size={11} color="#ffe0a0" style={{ position: 'absolute', top: 3, opacity: .5 }} />
+                <Icon name="ph:coin-fill" size={13} color="#ffc86b" style={{ position: 'absolute', top: 10, opacity: .75 }} />
+                <Icon name="ph:coin-fill" size={15} color="#ffd080" />
+              </span>
+            </span>
+          </div>
           <b>{t('shop.card_title', g.lang)}</b>
-          <span className="quick-sub">{t('shop.card_sub', g.lang)}</span>
-          <span className="quick-foot" style={{ color: '#ffc86b' }}>
-            <Icon name="ph:coin-fill" size={11} /> {g.coins}
-          </span>
+          <span className="qc-metric" style={{ color: '#ffc86b' }}>{g.coins}</span>
         </motion.button>
       </div>
 
-      {/* Pelatih AI — maskot yang lagi ngomong, bukan kartu data */}
+      {/* Pelatih AI — playful companion */}
       {ai && (
-        <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}>
-          <GamePanel className="gp-coach gp-coach--mascot">
-            <div className="coach-row">
+        <motion.div className="coach-playful" initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }}>
+          <div className="coach-playful-inner">
+            <div className="cp-mascot-area">
               <AiMascot happy={st.acc >= 0.85} />
-              <motion.div className="coach-bubble"
-                initial={{ opacity: 0, scale: 0.85, x: -6 }} animate={{ opacity: 1, scale: 1, x: 0 }}
-                transition={{ type: 'spring', stiffness: 340, damping: 24, delay: 0.1 }}>
-                <span className="coach-bubble-tail" />
-                <span className="coach-bubble-name">
-                  {plan.source === 'ai' ? t('coach.title_ai', g.lang) : t('coach.title_local', g.lang)}
-                  <span className="ai-dot" data-online={aiOnline() ? '1' : '0'} title={aiOnline() ? 'Server AI tersambung' : 'Server AI tidak terjangkau — pakai generator lokal'} />
-                </span>
-                <p>{oneLine(ai.message)}</p>
-              </motion.div>
+              {/* Sparkle particles around mascot */}
+              <motion.span className="cp-sparkle" style={{ top: -2, left: 12 }}
+                animate={{ opacity: [0, 1, 0], scale: [0.3, 1, 0.3], y: [-2, -10] }}
+                transition={{ duration: 1.6, repeat: Infinity, delay: 0 }}>✦</motion.span>
+              <motion.span className="cp-sparkle" style={{ top: 8, right: 4 }}
+                animate={{ opacity: [0, 1, 0], scale: [0.3, 1, 0.3], y: [4, -6] }}
+                transition={{ duration: 1.4, repeat: Infinity, delay: 0.7 }}>✧</motion.span>
+              <motion.span className="cp-sparkle" style={{ bottom: 4, left: 16 }}
+                animate={{ opacity: [0, 1, 0], scale: [0.3, 1, 0.3], y: [2, -8] }}
+                transition={{ duration: 1.8, repeat: Infinity, delay: 1.2 }}>⋆</motion.span>
             </div>
 
-            <motion.div className="coach-chips" initial="hidden" animate="show"
-              variants={{ hidden: {}, show: { transition: { staggerChildren: 0.08, delayChildren: 0.4 } } }}>
-              <motion.span className="coach-chip coach-chip--acc" variants={popVariant}
-                style={{ '--cc': st.acc >= 0.85 ? 'var(--green)' : 'var(--gold)' }}>
-                <Icon name="ph:target-fill" size={12} /> {Math.round(st.acc * 100)}%
-              </motion.span>
-              {(ai.focus || []).slice(0, 4).map((id) => {
-                const s = skillById[id]
-                if (!s) return null
-                const d = DOMAINS[s.domain]
-                return (
-                  <motion.span key={id} className="coach-chip" variants={popVariant} title={s.name}>
-                    <Icon name={d.icon} size={12} color="var(--gold)" />
-                  </motion.span>
-                )
-              })}
-              <motion.span className="coach-chip" variants={popVariant}>
-                <Icon name="ph:list-numbers-fill" size={12} /> {ai.sessionCount || 12} soal
-              </motion.span>
-            </motion.div>
-          </GamePanel>
+            <div className="cp-bubble-area">
+              <motion.div className="cp-bubble"
+                initial={{ opacity: 0, scale: 0.88, y: 6 }} animate={{ opacity: 1, scale: 1, y: 0 }}
+                transition={{ type: 'spring', stiffness: 300, damping: 22, delay: 0.15 }}>
+                <div className="cp-bubble-head">
+                  <span className="cp-bubble-role">
+                    {plan.source === 'ai' ? t('coach.title_ai', g.lang) : t('coach.title_local', g.lang)}
+                    <span className="ai-dot" data-online={aiOnline() ? '1' : '0'} />
+                  </span>
+                  {ai?.canAdvance && <span className="cp-levelup-badge">⬆ Naik!</span>}
+                </div>
+                <p className="cp-bubble-msg">{oneLine(ai.message)}</p>
+              </motion.div>
+
+              <div className="cp-stat-row">
+                <span className="cp-stat" style={{ '--cs': st.acc >= 0.85 ? 'var(--green)' : 'var(--gold)' }}>
+                  <Icon name="ph:target-fill" size={12} /> {Math.round(st.acc * 100)}%
+                </span>
+                {(ai.focus || []).slice(0, 3).map((id) => {
+                  const s = skillById[id]
+                  if (!s) return null
+                  const d = DOMAINS[s.domain]
+                  return (
+                    <span key={id} className="cp-stat" style={{ '--cs': 'var(--gold)' }} title={s.name}>
+                      <Icon name={d.icon} size={12} />
+                    </span>
+                  )
+                })}
+                <span className="cp-stat" style={{ '--cs': 'var(--dim)' }}>
+                  <Icon name="ph:list-numbers-fill" size={12} /> {ai.sessionCount || 12}
+                </span>
+              </div>
+            </div>
+          </div>
         </motion.div>
       )}
 
