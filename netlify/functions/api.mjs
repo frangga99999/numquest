@@ -105,7 +105,7 @@ function cleanVisual(v) {
 
 const LEVEL_NAME = { easy: 'Dasar (baru mulai berhitung)', mid: 'Menengah', adv: 'Mahir' }
 const LANG_RULE = {
-  id: 'Tulis SEMUA teks dalam bahasa Indonesia santai ala obrolan Jakarta sehari-hari.',
+  id: `Tulis SEMUA teks dalam bahasa Indonesia GAUL ala Jakarta SELATAN — santai, akrab, kayak ngobrol sama temen di kafe. Pakai kata: "gue", "lo", "nih", "dong", "deh", "sih", "kan", "ya", "banget", "aja". JANGAN pakai: "Anda", "jika", "maka", "tentukan", "berapakah", "hitunglah" — itu bahasa robot, bukan manusia.`,
   en: 'Write ALL text in casual, friendly English. Keep sentences short and plain.',
 }
 
@@ -430,8 +430,10 @@ const ULTIMATE_LEVEL_GUIDE = {
   adv:  `Angka besar (1-999). Multi-langkah (3-4). Visual: grid 4×4+, rotasi & refleksi majemuk, nested logic, transformasi berantai, Collatz-like branching, kripto 4+ variabel.`,
 }
 
-async function ultimateProblemsHandler(count, level) {
+async function ultimateProblemsHandler(count, level, lang) {
   if (!KEY) return { problems: null, error: 'AI_KEY belum diatur' }
+
+  const langRule = LANG_RULE[lang] || LANG_RULE.id
 
   // Rotasi format — 80% visual, 20% logic murni
   const visualFormats = ['pattern', 'rotation', 'grid', 'deduction', 'cryptovisual', 'spatial', 'transform']
@@ -498,7 +500,7 @@ ${ULTIMATE_LEVEL_GUIDE[level]}
 - JAWABAN HARUS ANGKA BULAT POSITIF (1-9999). Periksa 2× sebelum menjawab — jangan sampai salah!
 - JANGAN gunakan format: story, quick, compare, missing, estimate — itu soal Challenge mode, BUKAN Ultimate.
 - Bahasa SANTUN & GAUL (santai Jakarta), BUKAN bahasa textbook. Kayak ngomong ke temen.
-- ${LANG_RULE.id} Maks 30 kata per soal. Singkat tapi ngena.
+- ${langRule} Maks 30 kata per soal. Singkat tapi ngena.
 - Variasikan rentang jawaban. Jangan semua jawaban <20 atau semua >500.`,
       { jumlah: count, tingkat: level, rotasi: picked.map((f, i) => ({ index: i, format: f })) },
       `{"soal":[{"format":"pattern","domain":"logic","teks":"...","jawaban":42,"ikon":"ph:shapes-fill"}]}`,
@@ -566,7 +568,8 @@ const ROUTES = {
   'POST /problem/ultimate': async (_q, body) => {
     const count = num(body.count, 3, 15, 7)
     const level = ['easy', 'mid', 'adv'].includes(body.level) ? body.level : 'easy'
-    return ultimateProblemsHandler(count, level)
+    const lang = body.lang === 'en' ? 'en' : 'id'
+    return ultimateProblemsHandler(count, level, lang)
   },
 }
 

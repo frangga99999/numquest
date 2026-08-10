@@ -268,10 +268,10 @@ export function localUltimateProblems(count, level) {
 // Generate soal Ultimate Mode dari AI panelis khusus — 80% visual/spasial.
 // Bedas dari challengeProblems: fokus ke lateral thinking, logika pemrograman,
 // creative thinking, dan problem solving. Gagal → localUltimateProblems.
-export async function ultimateProblems(count, level) {
+export async function ultimateProblems(count, level, lang) {
   try {
     const { problems } = await withTimeout(
-      api.ultimateProblems({ count, level }), 15000,
+      api.ultimateProblems({ count, level, lang }), 15000,
     )
     return problems || null
   } catch {

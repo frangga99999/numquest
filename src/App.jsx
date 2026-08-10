@@ -1041,9 +1041,9 @@ export default function App() {
     if (kind === 'ultimate') {
       setLoadingSession(true)
       const [easy, mid, adv] = await Promise.all([
-        ultimateProblems(7, 'easy'),
-        ultimateProblems(7, 'mid'),
-        ultimateProblems(6, 'adv'),
+        ultimateProblems(7, 'easy', fresh.lang),
+        ultimateProblems(7, 'mid', fresh.lang),
+        ultimateProblems(6, 'adv', fresh.lang),
       ])
       const merged = [...(easy || []), ...(mid || []), ...(adv || [])]
       if (merged.length >= 10) {
