@@ -1,10 +1,11 @@
 services:
   - type: web
     name: numquest-api
-    env: node
-    nodeVersion: 22
+    runtime: node
+    region: singapore
+    plan: free
     buildCommand: npm install
-    startCommand: node --env-file-if-exists=.env server/index.js
+    startCommand: node server/index.js
     envVars:
       - key: AI_KEY
         sync: false
