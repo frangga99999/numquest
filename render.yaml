@@ -1,0 +1,20 @@
+services:
+  - type: web
+    name: numquest-api
+    env: node
+    nodeVersion: 22
+    buildCommand: npm install
+    startCommand: node --env-file-if-exists=.env server/index.js
+    envVars:
+      - key: AI_KEY
+        sync: false
+      - key: AI_BASE
+        value: https://api.deepseek.com/v1
+      - key: AI_MODEL
+        value: deepseek-chat
+      - key: AUTH_SECRET
+        sync: false
+      - key: PORT
+        value: "8787"
+      - key: CORS_ORIGIN
+        value: "*"

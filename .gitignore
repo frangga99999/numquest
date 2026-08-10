@@ -1,0 +1,8 @@
+node_modules
+dist
+.env
+numquest.db*
+.DS_Store
+
+# Local Netlify folder
+.netlify

@@ -1,0 +1,26 @@
+{
+  "name": "numquest",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "server": "node --env-file-if-exists=.env server/index.js",
+    "test": "node src/engine.test.mjs && node server/server.test.mjs"
+  },
+  "dependencies": {
+    "@iconify/react": "^6.0.2",
+    "canvas-confetti": "^1.9.4",
+    "framer-motion": "^11.11.17",
+    "gsap": "^3.12.5",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-feather": "^2.0.10"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^4.3.4",
+    "netlify-cli": "^27.1.1",
+    "vite": "^6.0.3"
+  }
+}

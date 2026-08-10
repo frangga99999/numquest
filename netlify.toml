@@ -1,0 +1,12 @@
+[build]
+  command = "npm run build"
+  publish = "dist"
+
+[build.environment]
+  # GANTI dengan URL server yang sudah di-deploy (lihat DEPLOY.md)
+  VITE_API = "https://numquest-api.onrender.com/api"
+
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
