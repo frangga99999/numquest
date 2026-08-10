@@ -34,10 +34,11 @@ const num = (v, lo, hi, dflt) => {
 }
 
 // ── AI chat helper ──────────────────────────────────────────────────────────
-async function chat(system, user, schemaHint, { timeout = 25_000, maxTokens } = {}) {
+async function chat(system, user, schemaHint, { timeout = 25_000, maxTokens, tone } = {}) {
   if (!KEY) throw new Error('AI_KEY belum diatur')
   const ctrl = new AbortController()
   const timer = setTimeout(() => ctrl.abort(), timeout)
+  const prefix = tone !== undefined ? tone : TONE
   try {
     const res = await fetch(`${BASE}/chat/completions`, {
       method: 'POST',
@@ -49,7 +50,7 @@ async function chat(system, user, schemaHint, { timeout = 25_000, maxTokens } = 
         ...(maxTokens ? { max_tokens: maxTokens } : {}),
         response_format: { type: 'json_object' },
         messages: [
-          { role: 'system', content: `${TONE}\n${system}\nBalas HANYA JSON: ${schemaHint}` },
+          { role: 'system', content: `${prefix}\n${system}\nBalas HANYA JSON: ${schemaHint}` },
           { role: 'user', content: JSON.stringify(user) },
         ],
       }),
@@ -269,15 +270,32 @@ ATURAN KETAT:
 }
 
 // ── Explain ─────────────────────────────────────────────────────────────────
+// Format: 2 tips — cara biasa (langkah standar) + cara tercepat (shortcut/trik).
+// Setiap tip punya judul pendek dan 2-3 langkah konkret.
 async function explainHandler(problem, g) {
   try {
     const out = await chat(
-      `User lagi buntu di satu soal matematika. Jelaskan caranya SANGAT sederhana, 2-3 kalimat pendek, langkah demi langkah, bahasa santai Jakarta. Jangan langsung sebut jawaban akhirnya di kalimat pertama.`,
+      `Kamu tutor matematika gaul. User BARU SALAH menjawab soal ini. Tugasmu: kasih 2 cara menyelesaikannya — cara BIASA (langkah standar yang diajarkan di sekolah) dan cara TERCEPAT (trik / shortcut / pola yang bikin cepet).
+
+${TONE}
+
+ATURAN PENTING:
+- judul: maks 4 kata, catchy. Contoh: "Pisah puluhan & satuan", "Kali silang cepat", "Balik operasinya"
+- cara_biasa: 2-3 langkah konkret. Cara yang diajarkan guru — jelas, runut, pasti benar.
+- cara_tercepat: 2-3 langkah. Shortcut, trik mental, atau pola yang bikin hitung jauh lebih cepat. KALAU MEMANG ADA shortcutnya. Kalau soalnya simpel dan nggak ada trik khusus, kasih alternatif cara berpikir yang beda sudut pandang — jangan ulangi cara biasa.
+- Setiap langkah: 1 kalimat pendek, bahasa santai Jakarta.
+- JANGAN cuma bilang "hitung seperti biasa" — kasih langkah KONKRET dengan angkanya.
+- JANGAN sebut "kamu salah" atau menggurui — user udah tau dia salah.`,
       { soal: problem.text, jawaban: problem.answer, tingkat: g.level },
-      '{"penjelasan":"..."}',
+      '{"judul_biasa":"...","cara_biasa":["...","...","..."],"judul_tercepat":"...","cara_tercepat":["...","...","..."]}',
+      { timeout: 10_000, maxTokens: 1024 },
     )
-    return { explanation: str(out.penjelasan, 220) }
-  } catch (e) { return { explanation: '', error: String(e.message).slice(0, 160) } }
+    const tips = [
+      { title: str(out.judul_biasa, 24) || 'Cara biasa', steps: (out.cara_biasa || []).map((s) => str(s, 120)).filter(Boolean).slice(0, 3) },
+      { title: str(out.judul_tercepat, 24) || 'Cara tercepat', steps: (out.cara_tercepat || []).map((s) => str(s, 120)).filter(Boolean).slice(0, 3) },
+    ].filter((t) => t.steps.length > 0)
+    return { tips: tips.length === 2 ? tips : null, explanation: tips.length === 2 ? tips.map((t) => `${t.title}: ${t.steps.join(' ')}`).join(' | ') : '' }
+  } catch (e) { return { tips: null, explanation: '', error: String(e.message).slice(0, 160) } }
 }
 
 // ── Challenge problem generation — AI penuh ──────────────────────────────────
@@ -389,6 +407,115 @@ ${CONTEXT_POOL.join(' | ')}
   }
 }
 
+// ── Ultimate problem generation — 80% visual/spasial ────────────────────────
+// Panelis AI khusus Ultimate Mode. BUKAN soal hitung biasa — fokus ke
+// lateral thinking, logika pemrograman, creative thinking, dan problem solving.
+// 80% soal melibatkan elemen visual/spasial/posisional.
+const ULTIMATE_FORMATS = [
+  'pattern',      // Pola visual/angka — lanjutkan urutan (2D, rotasi, geometris)
+  'rotation',     // Rotasi & refleksi — kubus, bangun datar, bayangan cermin
+  'grid',         // Grid & matriks — tabel 2D/3D, sudoku mini, magic square
+  'variable',     // Trace variabel ala programming — loop, swap, rekursi ringan
+  'deduction',    // Deduksi visual — posisi duduk, denah, susunan, urutan
+  'lateral',      // Lateral thinking — puzzle insight, hitung huruf, jam, paradoks
+  'cryptovisual', // Kripto visual — simbol/gambar ganti angka, sistem persamaan
+  'conditional',  // Logika programmer — if-else, state machine, Collatz-like
+  'spatial',      // Spasial murni — bayangan 3D, jarak, koordinat, arah mata angin
+  'transform',    // Transformasi — scaling, mapping, encoding sederhana
+]
+
+const ULTIMATE_LEVEL_GUIDE = {
+  easy: `Angka kecil (1-30). Satu langkah deduksi. Visual sederhana: grid 2×2 atau 3×3, pola segitiga/lingkaran, rotasi 1 langkah, deduksi 3-4 posisi. Pemula harus BISA menyelesaikan sambil belajar.`,
+  mid:  `Angka menengah (1-100). Dua langkah. Visual: grid 3×3 atau 4×4, rotasi 2 langkah, deduksi 4-5 posisi, variabel swapping, kripto 2-3 variabel.`,
+  adv:  `Angka besar (1-999). Multi-langkah (3-4). Visual: grid 4×4+, rotasi & refleksi majemuk, nested logic, transformasi berantai, Collatz-like branching, kripto 4+ variabel.`,
+}
+
+async function ultimateProblemsHandler(count, level) {
+  if (!KEY) return { problems: null, error: 'AI_KEY belum diatur' }
+
+  // Rotasi format — 80% visual, 20% logic murni
+  const visualFormats = ['pattern', 'rotation', 'grid', 'deduction', 'cryptovisual', 'spatial', 'transform']
+  const logicFormats = ['variable', 'lateral', 'conditional']
+  const picked = []
+  for (let i = 0; i < count; i++) {
+    // 80% visual, 20% logic — setiap 5 soal: 4 visual, 1 logic
+    const pool = i % 5 < 4 ? visualFormats : logicFormats
+    picked.push(pool[i % pool.length])
+  }
+  // Shuffle supaya tidak monoton
+  for (let i = picked.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [picked[i], picked[j]] = [picked[j], picked[i]]
+  }
+
+  try {
+    const out = await chat(
+      `Kamu adalah PANELIS UTAMA "Ultimate Mode" di game NumQuest — mode PALING BERGENGsi yang menguji OTAK, bukan cuma jari hitung.
+
+Kamu BUKAN generator soal matematika biasa. Kamu merancang TEKA-TEKI VISUAL & LOGIKA yang bikin pemain berhenti sejenak, mikir, lalu TERSENYUM karena "OH IYA!".
+
+${TONE}
+
+🎯 TINGKAT: ${LEVEL_NAME[level]}
+${ULTIMATE_LEVEL_GUIDE[level]}
+
+━━━ KOMPOSISI WAJIB ━━━
+📐 80% soal VISUAL/SPASIAL — pemain harus MEMBAYANGKAN bentuk, posisi, rotasi, grid, atau susunan.
+🧠 20% soal LOGIKA MURNI — lateral thinking, trace variabel, puzzle kata-angka.
+
+━━━ FORMAT SOAL (WAJIB ROTASI — jangan 2 format sama berturut!) ━━━
+
+📐 FORMAT VISUAL (80% — pilih dari sini):
+1. PATTERN — Pola visual/geometris: "Pola: ◆◇◆◆◇◆◆◆◇◆◆◆◆◇? Berapa jumlah ◆ sebelum ◇ berikutnya?" Atau urutan angka dengan twist visual: "1, 3, 7, 15, ?" (2ⁿ-1). JANGAN pola aritmetika biasa.
+2. ROTATION — Rotasi/refleksi bangun: "Kubus: depan=4, atas=2, kanan=6. Diputar ke KANAN 1×, lalu ke ATAS 1×. Angka apa di atas sekarang?" Atau "Jam 3:15, jarum jam diputar 180°, pukul berapa?"
+3. GRID — Matriks/tabel 2D: "Grid 3×3: [2,?,6 / 3,6,9 / 4,8,12]. Cari ?" Atau "Magic square 3×3, jumlah tiap baris=15. Pojok kiri=2, tengah=5. Berapa pojok kanan?" Atau denah kota sederhana.
+4. DEDUCTION — Deduksi visual posisional: "5 meja berjajar. Meja merah di antara biru dan hijau. Meja kuning di ujung kiri. Meja ungu di kanan merah. Urutan dari kiri?" Jawaban SELALU nomor posisi (1,2,3,4,5).
+5. CRYPTOVISUAL — Simbol/gambar = angka: "Jika ◆◇ + ◇◆ = 99 dan ◆ > ◇, berapa ◆ × ◇?" Atau "🔺+🟦=12, 🔺×🟦=32. 🔺>🟦. Berapa 🔺−🟦?" — sistem persamaan dengan twist visual.
+6. SPATIAL — Spasial murni: "Titik A(2,3), B(8,3). Titik C di tengah AB. Berapa jarak A ke C?" Atau "Dari atas, bawah, kiri, kanan — ada 4 jalan. Kamu hadap UTARA, belok KANAN 2×, lalu KIRI 1×. Hadap mana sekarang?" Jawaban: 1=utara, 2=timur, 3=selatan, 4=barat.
+7. TRANSFORM — Transformasi/encoding: "Kode: A=1, B=2, ..., Z=26. Kata 'CAT' = 3+1+20 = 24. Kata 'BED' = berapa?" Atau scaling: "Gambar diskalakan 3×. Semula 5×5 petak. Berapa petak sekarang?"
+
+🧠 FORMAT LOGIKA (20% — pilih dari sini):
+8. VARIABLE — Trace ala programming: "x=5, y=8. Step1: x=x+y. Step2: y=x−y. Step3: x=x−y. Berapa x+y sekarang?" Atau "Loop: for i=1..4: s=s+i×i. s awal=0. Berapa s akhir?"
+9. LATERAL — Puzzle insight: "1=4, 2=3, 3=3, 4=6, 5=4, 6=?" (hitung huruf: e-n-a-m = 4). Atau "Semua mobil punya 4 roda. 1 mobil punya 3. Berapa jumlah roda 5 mobil?" — jebakan kata.
+10. CONDITIONAL — Logika branching: "N=12. Aturan: jika N genap→N/2, jika ganjil→N×3−1. Iterasi 4×. Hasil akhir?" Atau state machine: "Lampu: ON→OFF→ON. Setiap klik: maju 1 state. Mulai OFF, klik 7×. State sekarang?" (1=ON, 0=OFF)
+
+⚠️ ATURAN KETAT — JANGAN DILANGGAR:
+- SETIAP soal formatnya HARUS UNIK. ${picked.slice(0, 5).map((f, i) => `Soal ${i + 1} wajib format "${f}"`).join('. ')}. Lanjutkan rotasi.
+- 80% soal HARUS VISUAL/SPASIAL — melibatkan posisi, rotasi, grid, susunan, bayangan. JANGAN cuma soal cerita hitung.
+- JAWABAN HARUS ANGKA BULAT POSITIF (1-9999). Periksa 2× sebelum menjawab — jangan sampai salah!
+- JANGAN gunakan format: story, quick, compare, missing, estimate — itu soal Challenge mode, BUKAN Ultimate.
+- Bikin pemain MIKIR KERAS lalu DAPAT INSIGHT. Soal harus terasa "cerdas", bukan "sulit".
+- Konteks: game, sci-fi, misteri, teknologi, alam, seni, coding — variatif.
+- ${LANG_RULE.id} Maks 35 kata per soal.
+- Variasikan rentang jawaban. Jangan semua jawaban <20 atau semua >500.`,
+      { jumlah: count, tingkat: level, rotasi: picked.map((f, i) => ({ index: i, format: f })) },
+      `{"soal":[{"format":"pattern","domain":"logic","teks":"...","jawaban":42,"ikon":"ph:shapes-fill"}]}`,
+      { timeout: 35_000, maxTokens: 4096 },
+    )
+
+    const problems = (out.soal || []).map((item, idx) => {
+      const answer = Number(item.jawaban)
+      if (!item.teks || !Number.isFinite(answer)) return null
+      const fmt = item.format || picked[idx] || 'pattern'
+      const domain = item.domain && DOMAINS[item.domain] ? item.domain : 'logic'
+      return {
+        key: `ultimate:${level}:${idx}:${Date.now()}`,
+        text: str(item.teks, 220),
+        answer,
+        skill: `ultimate-${fmt}`,
+        domain,
+        variant: 'word',
+        icon: item.ikon || 'ph:brain-fill',
+        _fmt: fmt,
+      }
+    }).filter(Boolean)
+
+    return { problems: problems.length >= 3 ? problems : null }
+  } catch (e) {
+    return { problems: null, error: String(e.message).slice(0, 160) }
+  }
+}
+
 // ── Router ──────────────────────────────────────────────────────────────────
 const ROUTES = {
   'GET /lessons': async (q) => {
@@ -423,6 +550,11 @@ const ROUTES = {
     const level = ['easy', 'mid', 'adv'].includes(body.level) ? body.level : 'easy'
     const domain = body.domain && DOMAINS[body.domain] ? body.domain : null
     return challengeProblemsHandler(count, level, domain)
+  },
+  'POST /problem/ultimate': async (_q, body) => {
+    const count = num(body.count, 3, 15, 7)
+    const level = ['easy', 'mid', 'adv'].includes(body.level) ? body.level : 'easy'
+    return ultimateProblemsHandler(count, level)
   },
 }
 

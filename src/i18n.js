@@ -236,6 +236,9 @@ const DICT = {
   'session.q_of':         { id: '#{i} dari {n}',        en: '#{i} of {n}' },
   'session.mantap':       { id: 'Mantap! +{n} XP',      en: 'Nice! +{n} XP' },
   'session.ai_thinking_short':{ id: 'AI mikir sebentar…', en: 'AI thinking…' },
+  'session.ai_tips_title':  { id: 'Tips AI',               en: 'AI Tips' },
+  'session.ai_tips_loading':{ id: 'AI nyiapin tips…',      en: 'AI preparing tips…' },
+  'session.skip':           { id: 'Lewati',                en: 'Skip' },
 
   // ── Focus picker ───────────────────────────
   'focus.title':          { id: 'Pilih fokus latihan',  en: 'Pick a focus' },
@@ -380,6 +383,17 @@ const DICT = {
   'pomo.start_fallback':  { id: 'Mulai fokus',           en: 'Start focus' },
   'pomo.min_abbr':        { id: ' mnt',                  en: ' min' },
   'pomo.dur_label':       { id: 'Fokus {n} menit',      en: '{n} min focus' },
+  // ── Ultimate Mode ────────────────────────────
+  'ultimate.title':        { id: 'Ultimate Mode',          en: 'Ultimate Mode' },
+  'ultimate.subtitle':     { id: 'Tantangan eskalasi — soal campuran dari mudah ke mahir. Buktikan kamu bisa taklukkan semuanya!', en: 'Escalating challenge — mixed problems from easy to advanced. Prove you can conquer them all!' },
+  'ultimate.start':        { id: 'Mulai Ultimate',         en: 'Start Ultimate' },
+  'ultimate.tag':          { id: 'Eskalasi',               en: 'Escalating' },
+  'ultimate.tier_easy':    { id: 'Dasar',                  en: 'Basic' },
+  'ultimate.tier_mid':     { id: 'Menengah',               en: 'Medium' },
+  'ultimate.tier_adv':     { id: 'Mahir',                  en: 'Advanced' },
+  'ultimate.summary_title':{ id: 'Ultimate Selesai!',      en: 'Ultimate Complete!' },
+  'ultimate.summary_body': { id: 'Kamu menaklukkan semua tingkat kesulitan. Lihat performamu di tiap tier.', en: 'You conquered all difficulty tiers. See your performance across each tier.' },
+
   // ── Panduan / Learn ───────────────────────
   'learn.title':        { id: 'Panduan',  en: 'Learn' },
   'learn.subtitle':     { id: 'Materi dirancang penuh gambar — biar paham konsepnya, bukan hafal rumusnya.', en: 'Every lesson is built around a picture — so you grasp the idea, not memorise a formula.' },

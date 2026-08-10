@@ -67,6 +67,9 @@ export default function Session({ g, setG, plan, onDone, onQuit }) {
   const [hiddenChoices, setHiddenChoices] = useState([])
   const [aiExplain, setAiExplain] = useState(null)
   const [aiLoading, setAiLoading] = useState(false)
+  const [wrongTips, setWrongTips] = useState(null)     // tips AI otomatis saat salah
+  const [tipsLoading, setTipsLoading] = useState(false)
+  const [tipsDismissed, setTipsDismissed] = useState(false)
   const [hp, setHp] = useState(plan.hp || 0)
   const [tally, setTally] = useState({ correct: 0, problems: 0, xp: 0, started: Date.now() })
   const [timeLeft, setTimeLeft] = useState(TIME_LIMIT[g.level] || 30)
@@ -88,10 +91,16 @@ export default function Session({ g, setG, plan, onDone, onQuit }) {
   const tallyRef = useRef(tally)
   tallyRef.current = tally
 
-  const useTimer = plan.kind === 'normal' || plan.kind === 'challenge'
+  const useTimer = plan.kind === 'normal' || plan.kind === 'challenge' || plan.kind === 'ultimate'
   const useHearts = useTimer
   const isChallenge = plan.kind === 'challenge'
   const isFocus = plan.kind === 'focus'
+  const isUltimate = plan.kind === 'ultimate'
+  // Compute current tier for Ultimate Mode
+  const tiers = plan.tiers || {}
+  const currentTier = isUltimate
+    ? i < tiers.easy ? 'easy' : i < tiers.easy + (tiers.mid || 0) ? 'mid' : 'adv'
+    : null
   const hearts = g.hearts
   const combo = g.combo || 0
   const p = list[i]
@@ -130,7 +139,17 @@ export default function Session({ g, setG, plan, onDone, onQuit }) {
   useEffect(() => { startRef.current = Date.now() }, [i])
 
   // Lifeline sekali pakai per soal — dibersihkan lagi begitu pindah soal
-  useEffect(() => { setHiddenChoices([]); setAiExplain(null); setAiLoading(false); setScorePop(null) }, [i])
+  useEffect(() => { setHiddenChoices([]); setAiExplain(null); setAiLoading(false); setWrongTips(null); setTipsLoading(false); setTipsDismissed(false); setScorePop(null) }, [i])
+
+  // Auto-fetch tips AI saat user salah jawab — non-blocking, user tetap bisa lanjut
+  useEffect(() => {
+    if (phase !== 'wrong' || wrongTips || tipsLoading) return
+    setTipsLoading(true)
+    explainProblem(p).then((result) => {
+      setTipsLoading(false)
+      if (result?.tips) setWrongTips(result.tips)
+    }).catch(() => setTipsLoading(false))
+  }, [phase, i]) // eslint-disable-line
 
   // Reset timer when question changes
   useEffect(() => {
@@ -293,9 +312,13 @@ export default function Session({ g, setG, plan, onDone, onQuit }) {
     sfx.tap()
     setG(useItem(g, 'askai'))
     setAiLoading(true)
-    const text = await explainProblem(p)
+    const result = await explainProblem(p)
     setAiLoading(false)
-    setAiExplain(text || p.why.join(' '))
+    if (result?.tips) {
+      setAiExplain(result.tips.map((t) => `${t.title}: ${t.steps.join(' ')}`).join(' | '))
+    } else {
+      setAiExplain(p.why.join(' '))
+    }
   }
 
   const useFreeze = () => {
@@ -464,6 +487,17 @@ export default function Session({ g, setG, plan, onDone, onQuit }) {
         </div>
       </div>
 
+      {/* ── Ultimate tier indicator ──────────────────────────────────── */}
+      {isUltimate && currentTier && (
+        <div style={{ display: 'flex', justifyContent: 'center', marginTop: 2 }}>
+          <span className={`ultimate-tier ${currentTier}`}>
+            <Icon name={currentTier === 'easy' ? 'ph:seedling-fill' : currentTier === 'mid' ? 'ph:fire-fill' : 'ph:lightning-fill'} size={12} />
+            {t(`ultimate.tier_${currentTier}`, g.lang)}
+            {' · '}{i < tiers.easy ? `${i + 1}/${tiers.easy}` : i < tiers.easy + tiers.mid ? `${i - tiers.easy + 1}/${tiers.mid}` : `${i - tiers.easy - tiers.mid + 1}/${tiers.adv}`}
+          </span>
+        </div>
+      )}
+
       {/* ── Focus timer bar ────────────────────────────────────────────── */}
       {isFocus && focusTotal > 0 && (
         <div className="focus-timer-bar">
@@ -609,7 +643,60 @@ export default function Session({ g, setG, plan, onDone, onQuit }) {
               <span>{aiExplain}</span>
             </motion.div>
           )}
-          {(explained || phase === 'wrong') && (
+          {/* Tips AI saat salah — visual, 2 metode, non-blocking */}
+          {phase === 'wrong' && !tipsDismissed && (
+            <motion.div className="wrong-tips"
+              initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}
+              transition={{ type: 'spring', stiffness: 280, damping: 24 }}>
+              {tipsLoading ? (
+                <div className="wrong-tips-loading">
+                  <motion.span className="wrong-tips-spin"
+                    animate={{ rotate: 360 }}
+                    transition={{ duration: 1.2, repeat: Infinity, ease: 'linear' }}>
+                    <Icon name="ph:circle-fill" size={6} color="var(--violet)" />
+                  </motion.span>
+                  <span>{t('session.ai_tips_loading', g.lang)}</span>
+                </div>
+              ) : wrongTips ? (
+                <>
+                  <div className="wrong-tips-head">
+                    <span className="wrong-tips-badge">
+                      <Icon name="ph:star-fill" size={14} color="var(--gold)" />
+                      {t('session.ai_tips_title', g.lang)}
+                    </span>
+                    <button className="wrong-tips-dismiss" onClick={() => setTipsDismissed(true)}
+                      aria-label={t('session.skip', g.lang)}>
+                      <Icon name="x" size={14} />
+                    </button>
+                  </div>
+                  <div className="wrong-tips-cols">
+                    {wrongTips.map((tip, idx) => (
+                      <motion.div key={idx} className="wrong-tip-card"
+                        initial={{ opacity: 0, x: idx === 0 ? -12 : 12 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: 0.15 + idx * 0.12, type: 'spring', stiffness: 240, damping: 22 }}>
+                        <div className="wrong-tip-icon" style={{ background: idx === 0 ? 'rgba(100,180,255,.12)' : 'rgba(255,180,60,.12)' }}>
+                          <Icon name={idx === 0 ? 'ph:book-fill' : 'ph:lightning-fill'}
+                            size={16} color={idx === 0 ? '#6ab4ff' : 'var(--gold)'} />
+                        </div>
+                        <div className="wrong-tip-body">
+                          <b className="wrong-tip-title">{tip.title}</b>
+                          <ol className="wrong-tip-steps">
+                            {tip.steps.map((s, k) => <li key={k}>{s}</li>)}
+                          </ol>
+                        </div>
+                      </motion.div>
+                    ))}
+                  </div>
+                </>
+              ) : (
+                <motion.ol className="ss-steps" initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }}>
+                  {p.why.map((w, k) => <li key={k}>{w}</li>)}
+                </motion.ol>
+              )}
+            </motion.div>
+          )}
+          {explained && phase !== 'wrong' && (
             <motion.ol className="ss-steps" initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }}>
               {p.why.map((w, k) => <li key={k}>{w}</li>)}
             </motion.ol>

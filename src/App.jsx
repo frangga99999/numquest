@@ -13,7 +13,7 @@ import Learn from './Learn.jsx'
 import { AI_PATH, nodeStatus, pathProgress, clearPathNode, starsFor, NODE_PROBLEM_COUNT } from './aiPath.js'
 import { useGame, blank, goalProgress, levelName, finishSession, heartsNow, energyNow, claimQuest, isClaimed, push, shopItem, last30 } from './store.js'
 import { newProblem, buildSession, fmt, parseNum, LEVELS, nextLevel, buildingLevels, DOMAINS, levelStatus, dayKey, skillById, rankFor, challengeTarget } from './engine.js'
-import { dailyPlan, DIAGNOSTIC, placeLevel, flavorSession, challengeProblems } from './ai.js'
+import { dailyPlan, DIAGNOSTIC, placeLevel, flavorSession, challengeProblems, ultimateProblems, localUltimateProblems } from './ai.js'
 import { GamePanel, GameTitle, ResourceBar, GameButton, GameBadge, ProgressTrack, Emblem } from './GameUI.jsx'
 import Modal from './Modal.jsx'
 import { sfx } from './sound.js'
@@ -361,7 +361,7 @@ function AiMascot({ size = 76, happy }) {
 }
 
 /* --------------------------------- Home ---------------------------------- */
-function Home({ g, setG, plan, onStartPicker, onChallengePicker, onOpenPath, onOpenShop, onFocus, onSettings }) {
+function Home({ g, setG, plan, onStartPicker, onChallengePicker, onUltimate, onOpenPath, onOpenShop, onFocus, onSettings }) {
   const prog = goalProgress(g)
   const lv = buildingLevels(g)
   const st = levelStatus(g)
@@ -600,6 +600,23 @@ function Home({ g, setG, plan, onStartPicker, onChallengePicker, onOpenPath, onO
           </GamePanel>
         </motion.div>
       )}
+
+      {/* Ultimate Mode — selalu tersedia */}
+      <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: .15 }}>
+        <GamePanel glow>
+          <div className="between" style={{ marginBottom: 10 }}>
+            <GameTitle icon="ph:spiral-fill" color="var(--green)">{t('ultimate.title', g.lang)}</GameTitle>
+            <span className="tag" style={{ background: 'rgba(62,201,138,.12)', color: 'var(--green)' }}>{t('ultimate.tag', g.lang)}</span>
+          </div>
+          <p style={{ marginTop: 0, fontSize: 13 }}>{t('ultimate.subtitle', g.lang)}</p>
+          <div style={{ marginTop: 12 }}>
+            <GameButton onClick={onUltimate}>
+              <Icon name="ph:spiral-fill" size={17} /> {t('ultimate.start', g.lang)}
+            </GameButton>
+          </div>
+        </GamePanel>
+      </motion.div>
 
       {/* Tugas harian */}
       <GamePanel>
@@ -982,27 +999,70 @@ export default function App() {
         kind: 'aipath', title: node.title, mult: 1, node,
         problems: buildSession(fresh, 0, [], { count: NODE_PROBLEM_COUNT, skillIds: node.skillIds, variantSeed: node.skillIds.length }),
       }),
+      ultimate: () => {
+        const TOTAL = 20
+        const gEasy = { ...fresh, level: 'easy' }
+        const gMid  = { ...fresh, level: 'mid' }
+        const gAdv  = { ...fresh, level: 'adv' }
+        return {
+          kind: 'ultimate', title: t('ultimate.title', g.lang),
+          mult: 1.5,
+          problems: [
+            ...buildSession(gEasy, 0, [], { count: 7, variantBias: 'word' }),
+            ...buildSession(gMid,  0, [], { count: 7, variantBias: 'word' }),
+            ...buildSession(gAdv,  0, [], { count: 6, variantBias: 'word' }),
+          ],
+          tiers: { easy: 7, mid: 7, adv: 6 },
+        }
+      },
     }
     const plan = plans[kind]()
     setG(fresh)
     setPicker(null)
     setShowFocusPicker(false)
 
-    // Challenge / Focus: coba AI dulu buat soal yang lebih variatif
+    // Challenge / Focus / Ultimate: coba AI dulu buat soal yang lebih variatif
     if (kind === 'challenge' || kind === 'focus') {
       setLoadingSession(true)
       const aiProblems = await challengeProblems(plan.problems.length, fresh.level, ch?.domain)
       if (aiProblems?.length) {
-        // AI soal sudah termasuk teks variatif — langsung pakai
         setLoadingSession(false)
         setSession({ ...plan, problems: aiProblems })
         setView('session')
         return
       }
-      // AI gagal, jatuh ke buildSession lokal + flavor
       const flavored = await flavorSession(plan.problems, fresh, 'challenge')
       setLoadingSession(false)
       setSession({ ...plan, problems: flavored })
+      setView('session')
+      return
+    }
+
+    if (kind === 'ultimate') {
+      setLoadingSession(true)
+      const [easy, mid, adv] = await Promise.all([
+        ultimateProblems(7, 'easy'),
+        ultimateProblems(7, 'mid'),
+        ultimateProblems(6, 'adv'),
+      ])
+      const merged = [...(easy || []), ...(mid || []), ...(adv || [])]
+      if (merged.length >= 10) {
+        const eLen = (easy || []).length
+        const mLen = (mid || []).length
+        const aLen = (adv || []).length
+        setLoadingSession(false)
+        setSession({ ...plan, problems: merged, tiers: { easy: eLen, mid: mLen, adv: aLen } })
+        setView('session')
+        return
+      }
+      // AI gagal — fallback ke generator lokal 80% visual
+      const localProblems = [
+        ...localUltimateProblems(7, 'easy'),
+        ...localUltimateProblems(7, 'mid'),
+        ...localUltimateProblems(6, 'adv'),
+      ]
+      setLoadingSession(false)
+      setSession({ ...plan, problems: localProblems })
       setView('session')
       return
     }
@@ -1082,6 +1142,7 @@ export default function App() {
     home: <Home g={g} setG={setG} plan={g.plan}
       onStartPicker={() => setPicker('normal')}
       onChallengePicker={() => setShowBrief(true)}
+      onUltimate={() => start('ultimate')}
       onOpenPath={() => setView('aipath')}
       onOpenShop={() => setView('shop')}
       onFocus={() => setShowFocusPicker(true)}

@@ -59,6 +59,7 @@ export const api = {
   flavorProblems: (problems) => call('POST', '/problem/flavor', { problems }),
   explainProblem: (problem) => call('POST', '/problem/explain', { problem }),
   challengeProblems: (opts) => call('POST', '/problem/challenge', opts),
+  ultimateProblems: (opts) => call('POST', '/problem/ultimate', opts),
 
   league: () => call('GET', '/league'),
   world: () => call('GET', '/world'),
