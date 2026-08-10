@@ -190,7 +190,15 @@ export const SKILLS = [
   // ---------- MENENGAH ----------
   {
     id: 'add-2d', name: 'Tambah 2 angka (tanpa simpan)', domain: 'add', level: 'mid',
-    roll: () => { const a = r(11, 79); return [a, r(11, 10 * (9 - Math.floor(a / 10)) + (9 - (a % 10)))] },
+    roll: () => {
+      const a = r(11, 69)
+      const maxTens = 8 - Math.floor(a / 10)  // puluhan b max, agar jumlah puluhan ≤ 9
+      const maxOnes = 9 - (a % 10)            // satuan b max, agar jumlah satuan ≤ 9
+      const bTens = maxTens > 0 ? r(1, maxTens) : 0
+      const bOnes = maxOnes > 0 ? r(0, maxOnes) : 0
+      const b = Math.max(10, bTens * 10 + bOnes)
+      return [a, b]
+    },
     make: ([a, b]) => ({
       text: `${a} + ${b} = ?`, answer: a + b, hint: 'Jumlahkan puluhan dulu, lalu satuan.',
       why: [`Puluhan: ${Math.floor(a / 10) * 10} + ${Math.floor(b / 10) * 10} = ${Math.floor(a / 10) * 10 + Math.floor(b / 10) * 10}.`,
@@ -737,20 +745,17 @@ export const SKILLS = [
     roll: () => {
       const names = [['Andi', 'Budi', 'Cici'], ['Kucing', 'Anjing', 'Kelinci'], ['Merah', 'Biru', 'Hijau']]
       const n = pick(names)
-      const a = n[0], b = n[1], c = n[2]
-      return [[a, b, c], pick([[a, b, c], [c, b, a], [b, a, c]])]
+      return [pick([
+        { text: `${n[0]} di depan ${n[1]}, ${n[2]} di belakang ${n[1]}. ${n[1]} di posisi ke berapa dari depan?`, answer: 2 },
+        { text: `Urutan dari depan: ${n[0]} → ${n[1]} → ${n[2]}. ${n[2]} di posisi ke berapa?`, answer: 3 },
+        { text: `Barisan: ${n[2]} paling depan, ${n[1]} di tengah, ${n[0]} paling belakang. ${n[0]} di posisi ke berapa?`, answer: 3 },
+      ])]
     },
-    make: ([[a, b, c], [f, s, t]]) => {
-      // f di depan s, t di belakang s — urutan: f, s, t
-      // Tanya: "Yang di tengah nomor berapa?" → 2, atau "Siapa di posisi 2?" → nama s
-      return {
-        text: `${f} di depan ${s}, ${t} di belakang ${s}. Siapa di posisi ke-2 dari depan?`,
-        answer: s === a ? 1 : s === b ? 2 : 3, // using position numbers for numeric keypad
-        choices: [1, 2, 3],
-        hint: `Bayangkan barisan: depan ... tengah ... belakang. ${s} ada di tengah.`,
-        why: [`Urutan dari depan: ${f} → ${s} → ${t}.`, `${s} ada di posisi ke-2.`],
-      }
-    },
+    make: ([p]) => ({
+      text: p.text, answer: p.answer, choices: [1, 2, 3],
+      hint: 'Bayangkan barisannya, hitung dari depan: posisi 1, 2, 3.',
+      why: [`Hitung dari depan satu per satu.`, `Jawaban: posisi ke-${p.answer}.`],
+    }),
   },
   {
     id: 'logic-var', name: 'Trace variabel', domain: 'logic', level: 'mid',
@@ -798,9 +803,12 @@ export const SKILLS = [
     id: 'logic-crypt', name: 'Kriptaritma mini', domain: 'logic', level: 'adv',
     roll: () => {
       const puzzles = [
-        { text: 'AB + BA = 88. A dan B digit berbeda. Berapa A × B?', a: 4, b: 4, ask: 'product' },
-        { text: 'AA + BB = 77. A dan B digit. Berapa A + B?', a: 3, b: 4, ask: 'sum' },
-        { text: 'AB − BA = 9. A dan B digit. Berapa A?', a: 5, b: 4, ask: 'a' },
+        // A×B=12, A+B=7, A>B → A=4, B=3 (unique)
+        { text: 'A × B = 12. A + B = 7. A > B. Berapa A?', a: 4, b: 3, ask: 'a' },
+        // A+A+A = B+B, A=2 → 6=2B → B=3
+        { text: 'A + A + A = B + B. A = 2. Berapa B?', a: 2, b: 3, ask: 'b' },
+        // A+B=8, A−B=2 → A=5, B=3 → A×B=15 (unique)
+        { text: 'A + B = 8. A − B = 2. A > B. Berapa A × B?', a: 5, b: 3, ask: 'product' },
       ]
       const p = pick(puzzles)
       return [p]
@@ -820,7 +828,8 @@ export const SKILLS = [
     id: 'logic-lateral', name: 'Lateral thinking', domain: 'logic', level: 'adv',
     roll: () => {
       const puzzles = [
-        { text: '1 = 3, 2 = 3, 3 = 5, 4 = 4, 5 = 4. Maka 6 = ?\n(Petunjuk: hitung jumlah huruf)', answer: 3 },
+        // Jumlah huruf dalam bahasa Indonesia: satu(4), dua(3), tiga(4), empat(5), lima(4) → enam(4)
+        { text: '1 = 4, 2 = 3, 3 = 4, 4 = 5, 5 = 4. Maka 6 = ?\n(Petunjuk: hitung jumlah huruf tiap angka)', answer: 4 },
         { text: 'Seorang ayah punya 3 anak: Andi, Budi, dan ___. Siapa nama anak ketiga?\n(Petunjuk: baca ulang kalimatnya)', answer: 3, choices: [1, 2, 3], labels: ['Andi (1)', 'Budi (2)', '___ (3)'] },
         { text: 'Semua mawar adalah bunga. Beberapa bunga cepat layu. Apakah SEMUA mawar cepat layu?', answer: 0, choices: [1, 0], labels: ['Ya (1)', 'Tidak (0)'] },
         { text: '1, 11, 21, 1211, 111221, ?\n(Petunjuk: baca keras-keras tiap baris)', answer: 312211 },
