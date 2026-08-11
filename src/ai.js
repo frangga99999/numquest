@@ -144,7 +144,7 @@ const LOCAL_ULTIMATE = {
       const n = 2 + Math.floor(Math.random() * 4)
       let val = n
       for (let i = 0; i < 3; i++) val = val % 2 === 0 ? val / 2 : val * 3 + 1
-      return { text: `Botol ajaib isinya ${n}ml. Kalo isinya genap: minum setengahnya. Kalo ganjil: tambahin 2× lipat + 1. Lakuin 3 kali ya. Terakhir isinya berapa?`, answer: val, domain: 'logic', icon: 'ph:git-branch-fill' }
+      return { text: `Botol ajaib isinya ${n}ml. Kalo isinya genap: minum setengahnya. Kalo ganjil: tambahin 3× lipat + 1. Lakuin 3 kali ya. Terakhir isinya berapa?`, answer: val, domain: 'logic', icon: 'ph:git-branch-fill' }
     },
   ],
 
@@ -185,7 +185,7 @@ const LOCAL_ULTIMATE = {
       return { text: 'Kode game: A=1, B=2, C=3, D=4. Kalo CAB = 3+1+2 = 6. Nah, kalo BAD = 2+1+4 = berapa?', answer: 7, domain: 'logic', icon: 'ph:translate-fill' }
     },
     () => {
-      return { text: 'Dua kantong: kiri isi 8rb, kanan 13rb. Semua isi kanan dipindahin ke kiri. Terus kiri ngasih 5rb ke kanan. Kantong kiri sekarang isinya berapa?', answer: 13, domain: 'logic', icon: 'ph:terminal-fill' }
+      return { text: 'Dua kantong: kiri isi 8rb, kanan 10rb. Semua isi kanan dipindahin ke kiri. Terus kiri ngasih 5rb ke kanan. Kantong kiri sekarang isinya berapa?', answer: 13, domain: 'logic', icon: 'ph:terminal-fill' }
     },
     () => {
       const w = ['SATU', 'DUA', 'ENAM', 'TUJUH'][Math.floor(Math.random() * 4)]

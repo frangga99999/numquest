@@ -317,7 +317,7 @@ export default function Session({ g, setG, plan, onDone, onQuit }) {
     if (result?.tips) {
       setAiExplain(result.tips.map((t) => `${t.title}: ${t.steps.join(' ')}`).join(' | '))
     } else {
-      setAiExplain(p.why.join(' '))
+      setAiExplain((p.why && p.why.length) ? p.why.join(' ') : 'Coba dekonstruksi langkah demi langkah.')
     }
   }
 
@@ -691,14 +691,14 @@ export default function Session({ g, setG, plan, onDone, onQuit }) {
                 </>
               ) : (
                 <motion.ol className="ss-steps" initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }}>
-                  {p.why.map((w, k) => <li key={k}>{w}</li>)}
+                  {p.why?.map((w, k) => <li key={k}>{w}</li>)}
                 </motion.ol>
               )}
             </motion.div>
           )}
           {explained && phase !== 'wrong' && (
             <motion.ol className="ss-steps" initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }}>
-              {p.why.map((w, k) => <li key={k}>{w}</li>)}
+              {p.why?.map((w, k) => <li key={k}>{w}</li>)}
             </motion.ol>
           )}
         </motion.div>
