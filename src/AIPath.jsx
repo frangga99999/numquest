@@ -194,6 +194,21 @@ export default function AIPath({ g, onStart, onClose }) {
   const [sel, setSel] = useState(null)
   const prog = pathProgress(g)
 
+  // Peta ini digambar di ruang koordinat tetap 480px (SVG + node absolut). Di
+  // layar lebih sempit, skalakan seluruh peta sebagai satu kesatuan supaya SVG
+  // dan node selalu sejajar dan tidak ada yang terpotong di tepi kanan.
+  const mapWrapRef = useRef(null)
+  const [scale, setScale] = useState(1)
+  useEffect(() => {
+    const el = mapWrapRef.current
+    if (!el) return
+    const measure = () => setScale(el.clientWidth > 0 ? Math.min(1, el.clientWidth / SVGW) : 1)
+    measure()
+    const ro = new ResizeObserver(measure)
+    ro.observe(el)
+    return () => ro.disconnect()
+  }, [])
+
   // hitung posisi semua node + tinggi SVG
   const { positions, totalH } = useMemo(() => {
     let catOff = 0
@@ -274,8 +289,9 @@ export default function AIPath({ g, onStart, onClose }) {
         ))}
       </div>
 
-      {/* pathway map */}
-      <div className="duo-map" style={{ height: totalH + 20 }}>
+      {/* pathway map — diskalakan agar muat di lebar layar apa pun */}
+      <div className="duo-map-wrap" ref={mapWrapRef} style={{ height: (totalH + 20) * scale }}>
+      <div className="duo-map" style={{ width: SVGW, height: totalH + 20, transform: `scale(${scale})`, transformOrigin: 'top left' }}>
         {/* SVG konektor */}
         <svg className="duo-svg" width={SVGW} height={totalH} viewBox={`0 0 ${SVGW} ${totalH}`}
           preserveAspectRatio="xMidYMid meet">
@@ -382,6 +398,7 @@ export default function AIPath({ g, onStart, onClose }) {
             </React.Fragment>
           )
         })}
+      </div>
       </div>
 
       {/* modal detail */}

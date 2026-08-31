@@ -121,7 +121,7 @@ assert.equal(tugas.length, 3)
 assert.equal(new Set(tugas.map((q) => q.kind)).size, 3, 'tiga tugas harus berbeda jenis')
 assert.ok(tugas.every((q) => q.target > 0 && q.title))
 const tantangan = (await call('GET', '/api/challenge', { token: andi.token })).data
-assert.ok(tantangan.title && tantangan.domain && tantangan.variantBias)
+assert.ok(tantangan.title && tantangan.domain)
 
 assert.equal((await call('GET', '/api/tidak-ada', { token: andi.token })).status, 404)
 

@@ -916,7 +916,8 @@ function applyVariant(p, kind) {
       `? ${op} ${fmt(b)} = ${fmt(val)}. Cari angka yang hilang di depan.`,
     ]
     return {
-      ...base, text: phrases[a % phrases.length], answer: a, choices: choices(a, a + 2, a - 2, b),
+      // Math.floor: a bisa desimal (mis. 1,1) → indeks pecahan bikin teks undefined.
+      ...base, text: phrases[Math.floor(a) % phrases.length], answer: a, choices: choices(a, a + 2, a - 2, b),
       hint: `Kerjakan kebalikannya: ${fmt(val)} ${op === '+' ? '−' : op === '−' ? '+' : op === '×' ? ':' : '×'} ${fmt(b)}.`,
       why: [`${op === '+' ? 'Balik jadi kurang' : op === '−' ? 'Balik jadi tambah' : op === '×' ? 'Balik jadi bagi' : 'Balik jadi kali'}: ${fmt(val)} ${op === '+' ? '−' : op === '−' ? '+' : op === '×' ? ':' : '×'} ${fmt(b)} = ${fmt(a)}.`, `Cek: ${fmt(a)} ${op} ${fmt(b)} = ${fmt(val)} ✓.`],
     }
@@ -958,14 +959,27 @@ export function supportsVariants(skillId) {
 export function problemFromKey(key) {
   const [id, raw, kind = 'plain'] = key.split(':')
   const s = skillById[id]
+  if (!s) return null
   const params = raw.split(',').map(Number)
+  // Skill logika/teka-teki memakai parameter objek (bukan angka), jadi tidak
+  // bisa dibangun ulang dari key string — roll ulang saja. Kartu SRS-nya tetap
+  // terjadwal; hanya soal spesifiknya yang diacak lagi. Tanpa ini, sesi crash
+  // saat kartu logika jatuh tempo (params jadi NaN → make() meledak).
+  if (params.some((n) => !Number.isFinite(n))) return newProblem(id, kind)
   return { ...applyVariant({ skill: id, variant: 'plain', ...s.make(params) }, kind), key }
 }
 
+// Penghitung untuk skill berparameter objek (logika/teka-teki): parameternya
+// tidak bisa di-serialize (semua kolaps ke "[object Object]"), sehingga tanpa
+// pembeda ini SEMUA instance-nya berbagi satu kunci — buildSession lalu meng-
+// anggapnya duplikat dan menciutkan sesi (mis. tantangan "Ruang Misteri" cuma
+// keluar 2 soal). Kunci unik bikin tiap instance berdiri sendiri.
+let _objUid = 0
 export function newProblem(skillId, kind = 'plain') {
   const s = skillById[skillId]
   const params = s.roll()
-  const key = `${skillId}:${params.join(',')}:${kind}`
+  const serial = params.every((p) => typeof p === 'number') ? params.join(',') : `n${_objUid++}`
+  const key = `${skillId}:${serial}:${kind}`
   return { ...applyVariant({ skill: skillId, variant: 'plain', ...s.make(params) }, kind), key }
 }
 
