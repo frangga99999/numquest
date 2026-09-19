@@ -104,6 +104,9 @@ const DICT = {
   'coach.ready':          { id: 'Udah siap naik level!', en: 'Ready to level up!' },
   'coach.ready_body':     { id: 'Ketepatan {acc}% · {gold}% skill emas', en: 'Accuracy {acc}% · {gold}% gold skills' },
   'coach.advance_btn':    { id: 'Gas naik ke {name}',   en: 'Level up to {name}' },
+  'coach.rd_acc':         { id: 'Akurasi',              en: 'Accuracy' },
+  'coach.rd_count':       { id: 'Soal',                 en: 'Problems' },
+  'coach.rd_focus':       { id: 'Fokus',                en: 'Focus' },
 
   // ── Onboarding ────────────────────────────
   'onb.title':            { id: 'NumQuest',             en: 'NumQuest' },
@@ -217,6 +220,7 @@ const DICT = {
   'aipath.cat_operasi':   { id: 'Operasi Hitung',       en: 'Operations' },
   'aipath.cat_lanjutan':  { id: 'Angka Lanjutan',       en: 'Advanced Numbers' },
   'aipath.cat_ai':        { id: 'Konsep AI',            en: 'AI Concepts' },
+  'aipath.finish':        { id: 'Garis Finis',          en: 'Finish Line' },
 
   // ── Auth ───────────────────────────────────
   'auth.register':        { id: 'Buat akun',            en: 'Create account' },

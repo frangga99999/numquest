@@ -70,7 +70,32 @@ export const AI_PATH = [
     why: 'AI nyari jawaban dengan bandingin pola dari data-data yang mirip.',
     skillIds: ['ratio', 'unit-price'],
   },
+  {
+    id: 'logika-mesin', title: 'Logika Mesin', icon: 'ph:flow-arrow-fill',
+    why: 'Di dalam AI ada jutaan aturan "KALAU begini, MAKA begitu". Sama persis kayak kamu mutusin bawa payung pas langit mendung — bedanya AI mutusin jutaan kali per detik.',
+    skillIds: ['logic-cond', 'logic-order', 'logic-var'],
+  },
+  {
+    id: 'angka-raksasa', title: 'Angka Raksasa', icon: 'ph:stack-fill',
+    why: 'AI ngolah angka segunung tiap detik. Rahasianya bukan ngitung persis, tapi mecah angka gede jadi potongan kecil terus dikira-kira. Trik yang sama bisa kamu pakai di kepala.',
+    skillIds: ['mul-2dx2d', 'est-multi', 'mental-comp'],
+  },
 ]
+
+// Babak + warnanya. Ditaruh di sini (bukan di AIPath.jsx) karena arena tempur
+// juga butuh warna monster yang sama persis kayak di peta.
+export const CATEGORIES = [
+  { key: 'dasar',    labelKey: 'aipath.cat_dasar',    color: '#f4b942', nodes: [0, 1, 2] },
+  { key: 'operasi',  labelKey: 'aipath.cat_operasi',  color: '#8d7bff', nodes: [3, 4, 5] },
+  { key: 'lanjutan', labelKey: 'aipath.cat_lanjutan', color: '#ff9f6b', nodes: [6, 7, 8, 9] },
+  { key: 'ai',       labelKey: 'aipath.cat_ai',       color: '#3ec98a', nodes: [10, 11, 12, 13, 14] },
+]
+
+export const catByIndex = {}
+CATEGORIES.forEach((c) => c.nodes.forEach((i) => { catByIndex[i] = c }))
+
+export const nodeIndexOf = (id) => AI_PATH.findIndex((n) => n.id === id)
+export const nodeColor = (index) => catByIndex[index]?.color || '#f4b942'
 
 export const NODE_PROBLEM_COUNT = 10
 export const NODE_PASS_ACC = 0.7

@@ -61,9 +61,9 @@ export const CHALLENGE_MODS = [
   { id: 'riddle', name: 'Teka-teki Menara', desc: 'Semua soal berbentuk "cari yang hilang".', nameKey: 'chmod.riddle.name', descKey: 'chmod.riddle.desc', variantBias: 'gap', mult: 2 },
   { id: 'judge', name: 'Sidang Angka', desc: 'Nilai pernyataan: benar atau salah.', nameKey: 'chmod.judge.name', descKey: 'chmod.judge.desc', variantBias: 'tf', mult: 2 },
   { id: 'duel', name: 'Duel Timbangan', desc: 'Bandingkan dua hitungan, pilih yang lebih besar.', nameKey: 'chmod.duel.name', descKey: 'chmod.duel.desc', variantBias: 'cmp', mult: 2 },
-  { id: 'mystery', name: 'Ruang Misteri', desc: 'Teka-teki logika, pola, dan deduksi — asah otak!', nameKey: 'chmod.mystery.name', descKey: 'chmod.mystery.desc', domainBias: 'logic', mult: 3 },
+  { id: 'mystery', name: 'Ruang Misteri', desc: 'Teka-teki logika, pola, dan deduksi — asah otak!', nameKey: 'chmod.mystery.name', descKey: 'chmod.mystery.desc', domainBias: 'logic', variantBias: 'plain', mult: 3 },
   { id: 'combo', name: 'Rantai Juara', desc: 'Soal berantai: jawaban soal 1 jadi input soal 2.', nameKey: 'chmod.combo.name', descKey: 'chmod.combo.desc', variantBias: 'plain', mult: 3, combo: true },
-  { id: 'boss', name: 'Bos Terakhir', desc: 'Soal susah semua — multi-langkah, untuk yang berani!', nameKey: 'chmod.boss.name', descKey: 'chmod.boss.desc', levelBias: 'adv', mult: 4 },
+  { id: 'boss', name: 'Bos Terakhir', desc: 'Soal susah semua — multi-langkah, untuk yang berani!', nameKey: 'chmod.boss.name', descKey: 'chmod.boss.desc', levelBias: 'adv', variantBias: 'plain', mult: 4 },
 ]
 
 export function localChallenge(g, daySeed) {

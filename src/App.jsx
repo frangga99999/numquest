@@ -10,6 +10,11 @@ import Arena from './Arena.jsx'
 import AIPath from './AIPath.jsx'
 import Shop from './Shop.jsx'
 import Learn from './Learn.jsx'
+import Foundation from './Foundation.jsx'
+import Academy from './Academy.jsx'
+import DesignSystem from './design-system/DesignSystem.jsx'
+import { localChallenge } from './quests.js'
+import { FOUNDATION_FLAG } from './foundations.js'
 import { AI_PATH, nodeStatus, pathProgress, clearPathNode, starsFor, NODE_PROBLEM_COUNT } from './aiPath.js'
 import { useGame, blank, goalProgress, levelName, finishSession, heartsNow, energyNow, claimQuest, isClaimed, push, shopItem, last30 } from './store.js'
 import { newProblem, buildSession, fmt, parseNum, LEVELS, nextLevel, buildingLevels, DOMAINS, levelStatus, dayKey, skillById, rankFor, challengeTarget } from './engine.js'
@@ -360,8 +365,54 @@ function AiMascot({ size = 76, happy }) {
   )
 }
 
+/* ---- Reaktor "Jarvis": maskot dibungkus HUD melingkar ala arc-reactor ----- */
+// Cincin berputar + gauge akurasi + partikel orbit. Bikin maskot terasa seperti
+// asisten AI canggih, tapi angkanya tetap kebaca orang awam.
+function JarvisReactor({ acc = 0, size = 112, happy }) {
+  const R = 49
+  const C = 2 * Math.PI * R
+  const gaugeColor = acc >= 0.85 ? 'var(--green)' : acc >= 0.6 ? 'var(--gold)' : '#ff9f6b'
+  return (
+    <div className="jv-reactor" style={{ width: size, height: size }}>
+      <svg className="jv-svg" viewBox="0 0 112 112">
+        {/* cincin luar putus-putus — berputar pelan */}
+        <motion.circle cx="56" cy="56" r="53" fill="none" stroke="rgba(141,123,255,.28)"
+          strokeWidth="1" strokeDasharray="2 7"
+          animate={{ rotate: 360 }} transition={{ duration: 24, repeat: Infinity, ease: 'linear' }}
+          style={{ transformOrigin: '56px 56px' }} />
+        {/* cincin tik — berlawanan arah */}
+        <motion.g animate={{ rotate: -360 }} transition={{ duration: 38, repeat: Infinity, ease: 'linear' }}
+          style={{ transformOrigin: '56px 56px' }}>
+          {Array.from({ length: 40 }).map((_, i) => {
+            const a = (i / 40) * Math.PI * 2
+            const big = i % 5 === 0
+            const r1 = big ? 40 : 43, r2 = 46
+            return <line key={i}
+              x1={56 + r1 * Math.cos(a)} y1={56 + r1 * Math.sin(a)}
+              x2={56 + r2 * Math.cos(a)} y2={56 + r2 * Math.sin(a)}
+              stroke={big ? 'rgba(141,123,255,.5)' : 'rgba(141,123,255,.2)'} strokeWidth={big ? 1.4 : 0.8} />
+          })}
+        </motion.g>
+        {/* jalur gauge */}
+        <circle cx="56" cy="56" r={R} fill="none" stroke="rgba(255,255,255,.06)" strokeWidth="3.5" />
+        {/* gauge akurasi */}
+        <motion.circle cx="56" cy="56" r={R} fill="none" stroke={gaugeColor} strokeWidth="3.5" strokeLinecap="round"
+          transform="rotate(-90 56 56)" style={{ filter: `drop-shadow(0 0 4px ${gaugeColor})` }}
+          initial={{ strokeDasharray: `0 ${C}` }} animate={{ strokeDasharray: `${C * Math.min(1, acc)} ${C}` }}
+          transition={{ duration: 1.1, ease: 'easeOut' }} />
+      </svg>
+      {/* partikel orbit */}
+      <motion.div className="jv-orbit"
+        animate={{ rotate: 360 }} transition={{ duration: 7, repeat: Infinity, ease: 'linear' }}>
+        <span className="jv-orbit-dot" />
+      </motion.div>
+      <div className="jv-core"><AiMascot size={size * 0.52} happy={happy} /></div>
+    </div>
+  )
+}
+
 /* --------------------------------- Home ---------------------------------- */
-function Home({ g, setG, plan, onStartPicker, onChallengePicker, onUltimate, onOpenPath, onOpenShop, onFocus, onSettings }) {
+function Home({ g, setG, plan, onStartPicker, onChallengePicker, onUltimate, onOpenPath, onOpenShop, onFocus, onSettings, onAcademy }) {
   const prog = goalProgress(g)
   const lv = buildingLevels(g)
   const st = levelStatus(g)
@@ -374,11 +425,12 @@ function Home({ g, setG, plan, onStartPicker, onChallengePicker, onUltimate, onO
   useEffect(() => {
     if (g.reducedMotion || !xpRef.current) return
     const o = { v: 0 }
-    gsap.to(o, { v: g.xp, duration: 1, ease: 'power2.out', onUpdate: () => { if (xpRef.current) xpRef.current.textContent = Math.round(o.v) } })
+    const tween = gsap.to(o, { v: g.xp, duration: 1, ease: 'power2.out', onUpdate: () => { if (xpRef.current) xpRef.current.textContent = Math.round(o.v) } })
+    return () => tween.kill()
   }, [g.xp, g.reducedMotion])
 
   return (
-    <div className="screen">
+    <div className="screen home-screen">
 
       {/* Resource bar */}
       <ResourceBar items={[
@@ -391,6 +443,8 @@ function Home({ g, setG, plan, onStartPicker, onChallengePicker, onUltimate, onO
 
       {/* Player banner */}
       <div className="player-banner">
+        <span className="pb-corner pb-tl" /><span className="pb-corner pb-tr" />
+        <span className="pb-corner pb-bl" /><span className="pb-corner pb-br" />
         <div className="hero-row">
           <Emblem icon="ph:user-fill" level={LEVEL_TIER[g.level]} size={54} />
           <div className="grow" style={{ minWidth: 0 }}>
@@ -459,14 +513,16 @@ function Home({ g, setG, plan, onStartPicker, onChallengePicker, onUltimate, onO
         </div>
       </div>
 
+      <button className="academy-banner" onClick={onAcademy}><span><small>AKADEMI NUMQUEST · BARU</small><strong>Kuasai angka, selangkah lebih jauh.</strong><span>Aritmatika & psikotes · Dasar hingga mahir</span></span><span aria-hidden="true">↗</span></button>
+
       {/* ── Tablet: 2‑column layout. Mobile: stacks naturally ───────── */}
       <div className="home-cols">
         <div className="home-col-left">
 
       {/* Aksi cepat — 3 kartu game-HUD bersih */}
       <div className="quick-grid">
-        <motion.button className="quick-card quick-card--path" onClick={onOpenPath} whileTap={{ scale: 0.96 }}>
-          <span className="qc-icon-circle" style={{ borderColor: 'var(--violet)' }}>
+        <motion.button className="quick-card quick-card--path" style={{ '--qc': 'var(--violet)' }} onClick={onOpenPath} whileTap={{ scale: 0.96 }}>
+          <span className="qc-icon-circle">
             <Icon name="ph:robot-fill" size={24} color="var(--violet)" />
           </span>
           <div className="qc-progress-bar">
@@ -480,8 +536,8 @@ function Home({ g, setG, plan, onStartPicker, onChallengePicker, onUltimate, onO
           <span className="qc-metric" style={{ color: 'var(--violet)' }}>{pathProgress(g).done}/{pathProgress(g).total}</span>
         </motion.button>
 
-        <motion.button className="quick-card quick-card--pomo" onClick={onFocus} whileTap={{ scale: 0.96 }}>
-          <span className="qc-icon-circle" style={{ borderColor: '#ff9f6b' }}>
+        <motion.button className="quick-card quick-card--pomo" style={{ '--qc': '#ff9f6b' }} onClick={onFocus} whileTap={{ scale: 0.96 }}>
+          <span className="qc-icon-circle">
             <motion.div animate={{ scale: [1, 1.06, 1] }} transition={{ duration: 2.5, repeat: Infinity }}>
               <Icon name="ph:brain-fill" size={24} color="#ff9f6b" />
             </motion.div>
@@ -492,8 +548,8 @@ function Home({ g, setG, plan, onStartPicker, onChallengePicker, onUltimate, onO
           </span>
         </motion.button>
 
-        <motion.button className="quick-card quick-card--shop" onClick={onOpenShop} whileTap={{ scale: 0.96 }}>
-          <span className="qc-icon-circle" style={{ borderColor: '#ffc86b' }}>
+        <motion.button className="quick-card quick-card--shop" style={{ '--qc': '#ffc86b' }} onClick={onOpenShop} whileTap={{ scale: 0.96 }}>
+          <span className="qc-icon-circle">
             <Icon name="ph:coin-fill" size={24} color="#ffc86b" />
           </span>
           <b>{t('shop.card_title', g.lang)}</b>
@@ -522,60 +578,71 @@ function Home({ g, setG, plan, onStartPicker, onChallengePicker, onUltimate, onO
         </div>{/* /home-col-left */}
         <div className="home-col-mid">
 
-      {/* Pelatih AI — playful companion */}
-      {ai && (
-        <motion.div className="coach-playful" initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }}>
-          <div className="coach-playful-inner">
-            <div className="cp-mascot-area">
-              <AiMascot happy={st.acc >= 0.85} />
-              {/* Sparkle particles around mascot */}
-              <motion.span className="cp-sparkle" style={{ top: -2, left: 12 }}
-                animate={{ opacity: [0, 1, 0], scale: [0.3, 1, 0.3], y: [-2, -10] }}
-                transition={{ duration: 1.6, repeat: Infinity, delay: 0 }}>✦</motion.span>
-              <motion.span className="cp-sparkle" style={{ top: 8, right: 4 }}
-                animate={{ opacity: [0, 1, 0], scale: [0.3, 1, 0.3], y: [4, -6] }}
-                transition={{ duration: 1.4, repeat: Infinity, delay: 0.7 }}>✧</motion.span>
-              <motion.span className="cp-sparkle" style={{ bottom: 4, left: 16 }}
-                animate={{ opacity: [0, 1, 0], scale: [0.3, 1, 0.3], y: [2, -8] }}
-                transition={{ duration: 1.8, repeat: Infinity, delay: 1.2 }}>⋆</motion.span>
-            </div>
+      {/* Pelatih AI — HUD asisten ala Jarvis */}
+      {ai && (() => {
+        const accPct = Math.round(st.acc * 100)
+        const accColor = st.acc >= 0.85 ? 'var(--green)' : st.acc >= 0.6 ? 'var(--gold)' : '#ff9f6b'
+        return (
+          <motion.div className="coach-jv" initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }}>
+            {/* siku bingkai HUD */}
+            <span className="cj-corner cj-tl" /><span className="cj-corner cj-tr" />
+            <span className="cj-corner cj-bl" /><span className="cj-corner cj-br" />
+            {/* garis pindai */}
+            <motion.span className="cj-scan"
+              animate={{ y: ['-10%', '460%'] }} transition={{ duration: 4, repeat: Infinity, ease: 'linear' }} />
 
-            <div className="cp-bubble-area">
-              <motion.div className="cp-bubble"
-                initial={{ opacity: 0, scale: 0.88, y: 6 }} animate={{ opacity: 1, scale: 1, y: 0 }}
-                transition={{ type: 'spring', stiffness: 300, damping: 22, delay: 0.15 }}>
-                <div className="cp-bubble-head">
-                  <span className="cp-bubble-role">
-                    {plan.source === 'ai' ? t('coach.title_ai', g.lang) : t('coach.title_local', g.lang)}
-                    <span className="ai-dot" data-online={aiOnline() ? '1' : '0'} />
-                  </span>
-                  {ai?.canAdvance && <span className="cp-levelup-badge">⬆ Naik!</span>}
-                </div>
-                <p className="cp-bubble-msg">{oneLine(ai.message)}</p>
-              </motion.div>
-
-              <div className="cp-stat-row">
-                <span className="cp-stat" style={{ '--cs': st.acc >= 0.85 ? 'var(--green)' : 'var(--gold)' }}>
-                  <Icon name="ph:target-fill" size={12} /> {Math.round(st.acc * 100)}%
-                </span>
-                {(ai.focus || []).slice(0, 3).map((id) => {
-                  const s = skillById[id]
-                  if (!s) return null
-                  const d = DOMAINS[s.domain]
-                  return (
-                    <span key={id} className="cp-stat" style={{ '--cs': 'var(--gold)' }} title={s.name}>
-                      <Icon name={d.icon} size={12} />
-                    </span>
-                  )
-                })}
-                <span className="cp-stat" style={{ '--cs': 'var(--dim)' }}>
-                  <Icon name="ph:list-numbers-fill" size={12} /> {ai.sessionCount || 12}
-                </span>
+            {/* header telemetri */}
+            <div className="cj-header">
+              <span className="cj-id">
+                <span className="cj-id-dot" data-online={aiOnline() ? '1' : '0'} />
+                {plan.source === 'ai' ? t('coach.title_ai', g.lang) : t('coach.title_local', g.lang)}
+              </span>
+              <div className="cj-eq" aria-hidden>
+                {Array.from({ length: 5 }).map((_, i) => (
+                  <motion.i key={i}
+                    animate={{ scaleY: [0.3, 1, 0.4, 0.85, 0.3] }}
+                    transition={{ duration: 1.1, repeat: Infinity, delay: i * 0.13, ease: 'easeInOut' }} />
+                ))}
               </div>
             </div>
-          </div>
-        </motion.div>
-      )}
+
+            <div className="cj-body">
+              <JarvisReactor acc={st.acc} happy={st.acc >= 0.85} />
+
+              <div className="cj-panel">
+                <p className="cj-msg">{oneLine(ai.message)}</p>
+                <div className="cj-readouts">
+                  <span className="cj-readout" style={{ '--rc': accColor }}>
+                    <b>{accPct}<i>%</i></b><small>{t('coach.rd_acc', g.lang)}</small>
+                  </span>
+                  <span className="cj-readout" style={{ '--rc': 'var(--gold)' }}>
+                    <b>{ai.sessionCount || 12}</b><small>{t('coach.rd_count', g.lang)}</small>
+                  </span>
+                  <span className="cj-readout cj-readout--focus" style={{ '--rc': 'var(--violet)' }}>
+                    <span className="cj-focus-icons">
+                      {(ai.focus || []).slice(0, 3).map((id) => {
+                        const s = skillById[id]
+                        if (!s) return null
+                        const d = DOMAINS[s.domain]
+                        return <Icon key={id} name={d.icon} size={13} color="var(--violet)" />
+                      })}
+                    </span>
+                    <small>{t('coach.rd_focus', g.lang)}</small>
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {ai?.canAdvance && (
+              <motion.div className="cj-alert"
+                animate={{ opacity: [0.75, 1, 0.75] }} transition={{ duration: 2, repeat: Infinity }}>
+                <Icon name="ph:arrow-circle-up-fill" size={14} color="var(--green)" />
+                {t('coach.ready', g.lang)}
+              </motion.div>
+            )}
+          </motion.div>
+        )
+      })()}
 
         </div>{/* /home-col-mid */}
         <div className="home-col-right">
@@ -753,7 +820,7 @@ function Summary({ s, g, onClose }) {
   useEffect(() => {
     if (g.reducedMotion) return
     const o = { v: 0 }
-    gsap.to(o, { v: s.xp, duration: 1.2, ease: 'power2.out', onUpdate: () => { if (ref.current) ref.current.textContent = Math.round(o.v) } })
+    const tween = gsap.to(o, { v: s.xp, duration: 1.2, ease: 'power2.out', onUpdate: () => { if (ref.current) ref.current.textContent = Math.round(o.v) } })
   }, []) // eslint-disable-line
   const acc = s.problems ? Math.round((s.correct / s.problems) * 100) : 0
   const icon = s.ranOut ? 'ph:moon-fill' : acc >= 80 ? 'ph:trophy-fill' : 'ph:sun-fill'
@@ -939,7 +1006,7 @@ function Settings({ g, setG, onClose, onSignIn }) {
 /* --------------------------------- Shell --------------------------------- */
 export default function App() {
   const [g, setG] = useGame()
-  const [tab, setTab] = useState('home')
+  const [tab, setTab] = useState(location.hash === '#design-system' ? 'design-system' : FOUNDATION_FLAG ? 'foundation' : 'home')
   const [view, setView] = useState('main')
   const [session, setSession] = useState(null)
   const [summary, setSummary] = useState(null)
@@ -969,17 +1036,17 @@ export default function App() {
   }, [showSettings, picker, showFocusPicker, showBrief, view])
 
   // Cek koneksi server AI sekali saat aplikasi terbuka
-  useEffect(() => { checkAiOnline() }, [])
+  useEffect(() => { if (tab !== 'foundation' && aiOnline() === null) checkAiOnline() }, [tab])
 
   useEffect(() => {
-    if (!g.onboarded || g.plan?.day === dayKey()) return
+    if (tab === 'foundation' || !g.onboarded || g.plan?.day === dayKey()) return
     let alive = true
     dailyPlan(g).then((p) => alive && setG((s) => ({ ...s, plan: p })))
     return () => { alive = false }
-  }, [g.onboarded, g.plan?.day, g.level]) // eslint-disable-line
+  }, [g.onboarded, g.plan?.day, g.level, tab]) // eslint-disable-line
 
   const start = async (kind, domain, node, focusMin) => {
-    const ch = g.plan?.challenge
+    const ch = g.plan?.challenge || localChallenge(g, Math.floor(Date.now() / 86400000))
     const curEnergy = energyNow(g)
     const useEnergy = kind === 'normal' && curEnergy > 0
     const fresh = { ...g, hearts: heartsNow(g), heartsAt: Date.now(), combo: 0,
@@ -1118,8 +1185,14 @@ export default function App() {
     setView('summary')
   }
 
+  if (tab === 'design-system') return <DesignSystem onClose={() => { history.replaceState(null, '', location.pathname); setTab('foundation') }} />
+
+  if (tab === 'academy' || view === 'academy') return <Academy g={g} setG={setG} onClose={() => { setTab(FOUNDATION_FLAG ? 'foundation' : 'home'); setView('main') }} />
+
+  if (tab === 'foundation') return <Foundation g={g} setG={setG} onLegacy={id => { setTab(id); setView('main') }} />
+
   if (!g.onboarded)
-    return <Onboarding onDone={({ level, goalMin }) => setG({ ...blank(), onboarded: true, level, goalMin })} />
+    return <><button className="foundation-return" onClick={() => setTab('foundation')}>← Kembali ke Fondasi</button><Onboarding onDone={({ level, goalMin }) => setG(state => ({ ...state, onboarded: true, level, goalMin }))} /></>
 
   if (loadingSession)
     return (
@@ -1146,7 +1219,8 @@ export default function App() {
       onOpenPath={() => setView('aipath')}
       onOpenShop={() => setView('shop')}
       onFocus={() => setShowFocusPicker(true)}
-      onSettings={() => setShowSettings(true)} />,
+      onSettings={() => setShowSettings(true)}
+      onAcademy={() => setView('academy')} />,
     progress: <Progress g={g} />,
     kingdom: <Kingdom g={g} setG={setG} />,
     clan: <Clan g={g} setG={setG} onSignIn={() => setView('auth')} onStartWar={() => start('war')} />,
@@ -1156,6 +1230,7 @@ export default function App() {
 
   return (
     <>
+      {FOUNDATION_FLAG && <button className="foundation-return" onClick={() => setTab('foundation')}>← Kembali ke Fondasi</button>}
       <AnimatePresence mode="wait">
         <motion.div key={tab} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} transition={{ duration: 0.2 }}>
           {screens[tab]}

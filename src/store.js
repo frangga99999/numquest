@@ -35,6 +35,7 @@ export const blank = () => ({
   skins: [],
   skin: '',
   days: {},              // dayKey -> {sec, problems, correct, xp, fast, maxCombo, dom:{}, form:{}, goalMet}
+  events: [],            // ring buffer event belajar mentah (telemetri) — sumber fakta, diagregasi nanti
   srs: {},               // problemKey -> {ef,int,reps,due}
   skills: {},            // skillId -> {hist:[1|0...], days:[dayNum]}
   levelDays: {},
@@ -93,8 +94,18 @@ export function energyNow(g) {
   return g.energy ?? 5
 }
 
+// ── Telemetri (M1) ──────────────────────────────────────────────────────────
+// Event belajar mentah. Disimpan sebagai ring buffer agar localStorage tidak
+// membengkak; agregasi harian (M6) membaca dari sini. `days[]` tetap agregat
+// harian yang lama — telemetri hanya menambah sinyal yang hilang di sana:
+// waktu tiap jawaban, pemakaian bantuan, dan jawaban mentah (buat klasifikasi
+// error nanti). attempt tidak disimpan karena tiap kartu SRS = soal baru,
+// jadi attempt selalu 1 di alur sekarang.
+const EVENT_CAP = 500
+const pushEvent = (g, ev) => [...(g.events || []), ev].slice(-EVENT_CAP)
+
 // Catat satu jawaban. Murni: terima state, kembalikan state baru.
-export function recordAnswer(g, problem, { correct, hinted, explained, ms, mult = 1 }) {
+export function recordAnswer(g, problem, { correct, hinted, explained, ms, mult = 1, given }) {
   const d = dayKey()
   const t = today()
   // double_xp: setiap jawaban benar mengonsumsi 1 charge pengganda
@@ -111,8 +122,21 @@ export function recordAnswer(g, problem, { correct, hinted, explained, ms, mult 
   // shield_active: salah pertama setelah aktivasi tidak kurangi nyawa
   const blocked = !correct && g.shieldActive
 
+  const ev = {
+    type: 'exercise_answered',
+    t: Date.now(),
+    skill: problem.skill,   // concept_id — satu-satunya granularitas konten hari ini
+    domain,
+    variant: problem.variant,
+    key: problem.key,       // exercise_id (kartu SRS)
+    correct, ms,
+    hinted, explained,
+    given,                  // jawaban mentah user — modal buat klasifikasi error (M2/M3)
+  }
+
   return {
     ...g,
+    events: pushEvent(g, ev),
     xp: g.xp + xp,
     coins: g.coins + coinGain,
     combo,
@@ -164,6 +188,7 @@ export function finishSession(g, { seconds = 0, problems = 0, correct = 0, kind 
   // `let`, bukan `const` — blok milestone di bawah menukar objeknya utuh.
   let next = {
     ...g,
+    events: pushEvent(g, { type: 'session_completed', t: Date.now(), kind, seconds, problems, correct }),
     streak, lastDay, shields, comebacks, bestStreak,
     combo: 0,
     sessions: g.sessions + 1,

@@ -138,7 +138,7 @@ assert.equal(questDone(qTest, { fast: 5 }), true)
 assert.equal(questProgress(qTest, undefined), 0, 'hari kosong tidak boleh bikin galat')
 
 // 9. Streak & nyawa (logika tanggal — gampang salah, tidak kelihatan di UI)
-const { finishSession, heartsNow, blank } = await import('./store.js')
+const { finishSession, heartsNow, blank, recordAnswer } = await import('./store.js')
 const { dayKey } = await import('./engine.js')
 const D = dayKey()
 const ago = (n) => { const d = new Date(); d.setDate(d.getDate() - n); return dayKey(d) }
@@ -166,6 +166,22 @@ assert.equal(finishSession({ ...blank(), days: { [D]: { sec: 30, problems: 2, co
 assert.equal(heartsNow({ ...blank(), hearts: 0, lastSeen: ago(1) }), 5, 'hari baru = nyawa penuh')
 assert.equal(heartsNow({ ...blank(), hearts: 0, lastSeen: D, heartsAt: Date.now() }), 1, 'tidak pernah terkunci total')
 assert.equal(heartsNow({ ...blank(), hearts: 0, lastSeen: D, heartsAt: Date.now() - 5 * 3600e3 }), 5, 'isi ulang setelah 4 jam')
+
+// 9c. Telemetri (M1): jawaban & sesi jadi event mentah; ring buffer dibatasi
+{
+  const p = { skill: 'add-1d', domain: 'add', variant: 'plain', key: 'add-1d:1,2:plain', answer: 3 }
+  let tg = blank()
+  tg = recordAnswer(tg, p, { correct: false, hinted: true, explained: false, ms: 4200, given: 4 })
+  const a = tg.events[0]
+  assert.equal(a.type, 'exercise_answered', 'event jawaban punya tipe kanonis')
+  assert.equal(a.correct, false); assert.equal(a.ms, 4200); assert.equal(a.given, 4)
+  assert.equal(a.hinted, true, 'pemakaian hint ikut terekam')
+  tg = finishSession(tg, { seconds: 90, problems: 1, correct: 0, kind: 'normal' })
+  assert.equal(tg.events[1].type, 'session_completed', 'tutup sesi jadi event')
+  let big = blank()
+  for (let i = 0; i < 520; i++) big = recordAnswer(big, p, { correct: true, ms: 100, given: 3 })
+  assert.equal(big.events.length, 500, 'ring buffer dibatasi supaya localStorage tidak membengkak')
+}
 
 // 9b. Hadiah milestone XP — jalur ini pernah bikin seluruh layar blank karena
 // objek hasilnya ditukar lewat variabel const. Sekali kena, sesi tidak bisa ditutup.

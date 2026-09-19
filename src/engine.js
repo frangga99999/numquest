@@ -16,9 +16,9 @@ const choices = (answer, ...distractors) => {
   const set = [answer]
   for (const d of distractors) if (!set.includes(d) && d != null) set.push(d)
   if (typeof answer === 'number') {
-    while (set.length < 4) {
-      const c = answer + pick([-2, -1, 1, 2, 10, -10])
-      if (!set.includes(c)) set.push(c)
+    for (const offset of [-2, -1, 1, 2, 10, -10]) {
+      if (set.length >= 4) break
+      if (!set.includes(answer + offset)) set.push(answer + offset)
     }
   }
   return set.slice(0, 4).sort(() => Math.random() - 0.5)
@@ -619,22 +619,25 @@ export const SKILLS = [
     }),
   },
   {
+    // Param HARUS angka: kunci SRS dibangun-ulang dari `params.join(',')`, jadi
+    // menyimpan objek di sini bikin problemFromKey() menerima NaN dan crash.
+    // Simpan [n, indeks-operasi] lalu susun ulang op-nya di make().
     id: 'num-riddle', name: 'Tebak angkaku', domain: 'ns', level: 'mid',
-    roll: () => {
-      const n = r(5, 30)
+    roll: () => [r(5, 30), r(0, 3)],
+    make: ([n, oi]) => {
       const ops = [
-        { desc: `dikali 2 lalu ditambah 4 hasilnya ${n * 2 + 4}`, ans: n, rev: (x) => (x * 2 + 4) },
-        { desc: `dikali 3 lalu dikurang 6 hasilnya ${n * 3 - 6}`, ans: n, rev: (x) => (x * 3 - 6) },
-        { desc: `ditambah 8 lalu dikali 2 hasilnya ${(n + 8) * 2}`, ans: n, rev: (x) => ((x + 8) * 2) },
-        { desc: `dikurang 5 lalu dikali 4 hasilnya ${(n - 5) * 4}`, ans: n, rev: (x) => ((x - 5) * 4) },
+        { desc: `dikali 2 lalu ditambah 4 hasilnya ${n * 2 + 4}`, rev: (x) => (x * 2 + 4) },
+        { desc: `dikali 3 lalu dikurang 6 hasilnya ${n * 3 - 6}`, rev: (x) => (x * 3 - 6) },
+        { desc: `ditambah 8 lalu dikali 2 hasilnya ${(n + 8) * 2}`, rev: (x) => ((x + 8) * 2) },
+        { desc: `dikurang 5 lalu dikali 4 hasilnya ${(n - 5) * 4}`, rev: (x) => ((x - 5) * 4) },
       ]
-      return [pick(ops)]
+      const op = ops[((oi % ops.length) + ops.length) % ops.length]
+      return {
+        text: `Aku mikirin sebuah angka. Kalau ${op.desc}. Angka berapa itu?`, answer: n,
+        hint: 'Kerjakan kebalikannya (invers). Mulai dari hasil akhir, balik langkahnya.',
+        why: [`Balik langkah terakhir dulu.`, `Lalu balik langkah pertama.`, `Angkaku: ${n}. Cek: ${op.desc.replace('hasilnya', '= ' + op.rev(n))}.`],
+      }
     },
-    make: ([op]) => ({
-      text: `Aku mikirin sebuah angka. Kalau ${op.desc}. Angka berapa itu?`, answer: op.ans,
-      hint: 'Kerjakan kebalikannya (invers). Mulai dari hasil akhir, balik langkahnya.',
-      why: [`Balik langkah terakhir dulu.`, `Lalu balik langkah pertama.`, `Angkaku: ${op.ans}. Cek: ${op.desc.replace('hasilnya', '= ' + op.rev(op.ans))}. ✓`],
-    }),
   },
   {
     id: 'order-ops', name: 'Urutan hitung', domain: 'est', level: 'adv',
@@ -719,17 +722,18 @@ export const SKILLS = [
 
   // ────────────── LOGIKA & POLA (lateral thinking, programming logic) ──────────
   {
+    // Semua skill logika: param HARUS angka supaya kunci SRS bisa dibangun-ulang.
+    // Simpan indeks (dan angka acak bila perlu), susun ulang objek soalnya di make().
     id: 'logic-seq', name: 'Pola bilangan', domain: 'logic', level: 'easy',
-    roll: () => {
+    roll: () => [r(0, 3)],
+    make: ([pi]) => {
       const patterns = [
         { seq: [2, 4, 6, 8], step: 2, name: 'aritmetika +2' },
         { seq: [3, 6, 12, 24], step: '×2', name: 'geometri ×2' },
         { seq: [1, 4, 9, 16], step: 'n²', name: 'kuadrat' },
         { seq: [5, 10, 15, 20], step: 5, name: 'aritmetika +5' },
       ]
-      return [pick(patterns)]
-    },
-    make: ([p]) => {
+      const p = patterns[((pi % patterns.length) + patterns.length) % patterns.length]
       const next = typeof p.step === 'number' ? p.seq[3] + p.step : p.step === '×2' ? p.seq[3] * 2 : 25
       return {
         text: `Lanjutkan pola: ${p.seq.join(', ')}, ?`,
@@ -742,66 +746,71 @@ export const SKILLS = [
   },
   {
     id: 'logic-order', name: 'Urutan logika', domain: 'logic', level: 'easy',
-    roll: () => {
+    roll: () => [r(0, 2), r(0, 2)],
+    make: ([ni, pi]) => {
       const names = [['Andi', 'Budi', 'Cici'], ['Kucing', 'Anjing', 'Kelinci'], ['Merah', 'Biru', 'Hijau']]
-      const n = pick(names)
-      return [pick([
+      const n = names[((ni % names.length) + names.length) % names.length]
+      const puzzles = [
         { text: `${n[0]} di depan ${n[1]}, ${n[2]} di belakang ${n[1]}. ${n[1]} di posisi ke berapa dari depan?`, answer: 2 },
         { text: `Urutan dari depan: ${n[0]} → ${n[1]} → ${n[2]}. ${n[2]} di posisi ke berapa?`, answer: 3 },
         { text: `Barisan: ${n[2]} paling depan, ${n[1]} di tengah, ${n[0]} paling belakang. ${n[0]} di posisi ke berapa?`, answer: 3 },
-      ])]
+      ]
+      const p = puzzles[((pi % puzzles.length) + puzzles.length) % puzzles.length]
+      return {
+        text: p.text, answer: p.answer, choices: [1, 2, 3],
+        hint: 'Bayangkan barisannya, hitung dari depan: posisi 1, 2, 3.',
+        why: [`Hitung dari depan satu per satu.`, `Jawaban: posisi ke-${p.answer}.`],
+      }
     },
-    make: ([p]) => ({
-      text: p.text, answer: p.answer, choices: [1, 2, 3],
-      hint: 'Bayangkan barisannya, hitung dari depan: posisi 1, 2, 3.',
-      why: [`Hitung dari depan satu per satu.`, `Jawaban: posisi ke-${p.answer}.`],
-    }),
   },
   {
     id: 'logic-var', name: 'Trace variabel', domain: 'logic', level: 'mid',
     roll: () => {
-      const ops = [
-        { x: r(3, 9), y: r(2, 7), code: 'x = x + y\ny = x - y\nx = x - y', fx: (x, y) => [y, x] },
-        { x: r(2, 8), y: r(3, 6), code: 'x = x * 2\ny = y + x', fx: (x, y) => [x * 2, y + x * 2] },
-        { x: r(3, 7), y: r(2, 5), code: 'x = x + 3\ny = y + x', fx: (x, y) => [x + 3, y + x + 3] },
-      ]
-      const op = pick(ops)
-      return [op]
+      const oi = r(0, 2)
+      const rg = [[3, 9, 2, 7], [2, 8, 3, 6], [3, 7, 2, 5]][oi]
+      return [oi, r(rg[0], rg[1]), r(rg[2], rg[3])]
     },
-    make: ([op]) => {
-      const [nx, ny] = op.fx(op.x, op.y)
+    make: ([oi, x, y]) => {
+      const ops = [
+        { code: 'x = x + y\ny = x - y\nx = x - y', fx: (x, y) => [y, x] },
+        { code: 'x = x * 2\ny = y + x', fx: (x, y) => [x * 2, y + x * 2] },
+        { code: 'x = x + 3\ny = y + x', fx: (x, y) => [x + 3, y + x + 3] },
+      ]
+      const op = ops[((oi % ops.length) + ops.length) % ops.length]
+      const [nx, ny] = op.fx(x, y)
       return {
-        text: `x = ${op.x}, y = ${op.y}\n${op.code}\nBerapa x + y sekarang?`,
+        text: `x = ${x}, y = ${y}\n${op.code}\nBerapa x + y sekarang?`,
         answer: nx + ny,
-        choices: choices(nx + ny, op.x + op.y, nx + op.y, op.x + ny),
+        choices: choices(nx + ny, x + y, nx + y, x + ny),
         hint: 'Jalankan kode baris per baris, catat nilai x dan y tiap langkah.',
-        why: [`Awal: x=${op.x}, y=${op.y}.`, `Setelah kode: x=${nx}, y=${ny}.`, `x + y = ${nx + ny}.`],
+        why: [`Awal: x=${x}, y=${y}.`, `Setelah kode: x=${nx}, y=${ny}.`, `x + y = ${nx + ny}.`],
       }
     },
   },
   {
     id: 'logic-cond', name: 'Logika kondisi', domain: 'logic', level: 'mid',
-    roll: () => {
+    roll: () => [r(0, 3)],
+    make: ([pi]) => {
       const puzzles = [
         { text: 'Semua programmer suka kopi. Andi programmer. Apakah Andi suka kopi?', answer: 1, choices: [1, 0], labels: ['Ya (1)', 'Tidak (0)'] },
         { text: 'Jika hujan, tanah basah. Tanah basah. Apakah pasti hujan?', answer: 0, choices: [1, 0], labels: ['Ya (1)', 'Tidak (0)'] },
         { text: 'x = 7. Jika x > 5 maka x = x * 2, selain itu x = x + 1. Berapa x?', answer: 14, choices: choices(14, 8, 7, 15) },
         { text: 'N = 9. Jika N genap maka N = N/2, selain itu N = N*3+1. Berapa N?', answer: 28, choices: choices(28, 4, 10, 9) },
       ]
-      const p = pick(puzzles)
-      return [p]
+      const p = puzzles[((pi % puzzles.length) + puzzles.length) % puzzles.length]
+      return {
+        text: p.text,
+        answer: p.answer,
+        choices: p.choices || choices(p.answer, p.answer + 2, p.answer - 2, p.answer + 5),
+        hint: p.answer === 1 ? 'Ikuti premisnya — berlaku ke semua anggota.' : p.answer === 0 ? 'Hati-hati dengan arah implikasi. Basah belum tentu karena hujan.' : 'Eksekusi kondisinya: periksa syarat, jalankan yang cocok.',
+        why: p.labels ? [`Jawabannya: ${p.labels.find((l) => l.includes(String(p.answer))) || p.answer}.`] : [`Hasil akhir: ${p.answer}.`],
+      }
     },
-    make: ([p]) => ({
-      text: p.text,
-      answer: p.answer,
-      choices: p.choices || choices(p.answer, p.answer + 2, p.answer - 2, p.answer + 5),
-      hint: p.answer === 1 ? 'Ikuti premisnya — berlaku ke semua anggota.' : p.answer === 0 ? 'Hati-hati dengan arah implikasi. Basah belum tentu karena hujan.' : 'Eksekusi kondisinya: periksa syarat, jalankan yang cocok.',
-      why: p.labels ? [`Jawabannya: ${p.labels.find((l) => l.includes(String(p.answer))) || p.answer}.`] : [`Hasil akhir: ${p.answer}.`],
-    }),
   },
   {
     id: 'logic-crypt', name: 'Kriptaritma mini', domain: 'logic', level: 'adv',
-    roll: () => {
+    roll: () => [r(0, 2)],
+    make: ([pi]) => {
       const puzzles = [
         // A×B=12, A+B=7, A>B → A=4, B=3 (unique)
         { text: 'A × B = 12. A + B = 7. A > B. Berapa A?', a: 4, b: 3, ask: 'a' },
@@ -810,11 +819,8 @@ export const SKILLS = [
         // A+B=8, A−B=2 → A=5, B=3 → A×B=15 (unique)
         { text: 'A + B = 8. A − B = 2. A > B. Berapa A × B?', a: 5, b: 3, ask: 'product' },
       ]
-      const p = pick(puzzles)
-      return [p]
-    },
-    make: ([p]) => {
-      const ans = p.ask === 'product' ? p.a * p.b : p.ask === 'sum' ? p.a + p.b : p.a
+      const p = puzzles[((pi % puzzles.length) + puzzles.length) % puzzles.length]
+      const ans = p.ask === 'product' ? p.a * p.b : p.ask === 'sum' ? p.a + p.b : p.ask === 'b' ? p.b : p.a
       return {
         text: p.text,
         answer: ans,
@@ -826,7 +832,8 @@ export const SKILLS = [
   },
   {
     id: 'logic-lateral', name: 'Lateral thinking', domain: 'logic', level: 'adv',
-    roll: () => {
+    roll: () => [r(0, 3)],
+    make: ([pi]) => {
       const puzzles = [
         // Jumlah huruf dalam bahasa Indonesia: satu(4), dua(3), tiga(4), empat(5), lima(4) → enam(4)
         { text: '1 = 4, 2 = 3, 3 = 4, 4 = 5, 5 = 4. Maka 6 = ?\n(Petunjuk: hitung jumlah huruf tiap angka)', answer: 4 },
@@ -834,16 +841,15 @@ export const SKILLS = [
         { text: 'Semua mawar adalah bunga. Beberapa bunga cepat layu. Apakah SEMUA mawar cepat layu?', answer: 0, choices: [1, 0], labels: ['Ya (1)', 'Tidak (0)'] },
         { text: '1, 11, 21, 1211, 111221, ?\n(Petunjuk: baca keras-keras tiap baris)', answer: 312211 },
       ]
-      const p = pick(puzzles)
-      return [p]
+      const p = puzzles[((pi % puzzles.length) + puzzles.length) % puzzles.length]
+      return {
+        text: p.text,
+        answer: p.answer,
+        choices: p.choices || choices(p.answer, p.answer + 2, Math.abs(p.answer - 2), p.answer * 2),
+        hint: 'Baca petunjuk baik-baik. Pikir di luar kebiasaan — lateral thinking!',
+        why: [`Jawaban: ${p.answer}. ${p.labels ? p.labels.find((l) => l.includes(String(p.answer))) || '' : ''}`],
+      }
     },
-    make: ([p]) => ({
-      text: p.text,
-      answer: p.answer,
-      choices: p.choices || choices(p.answer, p.answer + 2, Math.abs(p.answer - 2), p.answer * 2),
-      hint: 'Baca petunjuk baik-baik. Pikir di luar kebiasaan — lateral thinking!',
-      why: [`Jawaban: ${p.answer}. ${p.labels ? p.labels.find((l) => l.includes(String(p.answer))) || '' : ''}`],
-    }),
   },
 ]
 
@@ -916,7 +922,9 @@ function applyVariant(p, kind) {
       `? ${op} ${fmt(b)} = ${fmt(val)}. Cari angka yang hilang di depan.`,
     ]
     return {
-      ...base, text: phrases[a % phrases.length], answer: a, choices: choices(a, a + 2, a - 2, b),
+      // a bisa desimal (mis. skill desimal) → indeks harus dibulatkan, kalau
+      // tidak phrases[1.5] = undefined dan soalnya jadi kosong.
+      ...base, text: phrases[Math.abs(Math.round(a)) % phrases.length], answer: a, choices: choices(a, a + 2, a - 2, b),
       hint: `Kerjakan kebalikannya: ${fmt(val)} ${op === '+' ? '−' : op === '−' ? '+' : op === '×' ? ':' : '×'} ${fmt(b)}.`,
       why: [`${op === '+' ? 'Balik jadi kurang' : op === '−' ? 'Balik jadi tambah' : op === '×' ? 'Balik jadi bagi' : 'Balik jadi kali'}: ${fmt(val)} ${op === '+' ? '−' : op === '−' ? '+' : op === '×' ? ':' : '×'} ${fmt(b)} = ${fmt(a)}.`, `Cek: ${fmt(a)} ${op} ${fmt(b)} = ${fmt(val)} ✓.`],
     }
@@ -1073,6 +1081,10 @@ export function buildSession(g, minutes, focus = [], opts = {}) {
   let guard = 0
   while (out.length < total && guard++ < total * 6) fresh(byWeakness[(out.length + guard) % byWeakness.length])
 
+  // Small finite skill banks can exhaust unique questions. Keep the promised
+  // session length with spaced repeats instead of spinning or ending early.
+  const available = out.length
+  for (let i = 0; out.length < total && available; i++) out.push({ ...out[i % available] })
   return out.slice(0, total)
 }
 

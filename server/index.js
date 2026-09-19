@@ -5,6 +5,7 @@ import { fileURLToPath } from 'node:url'
 import db, { weekKey, rollWeek } from './db.js'
 import { hashPassword, verifyPassword, makeToken, readToken, validateSignup } from './auth.js'
 import * as ai from './ai.js'
+import { generateAcademy } from './academy.js'
 import { today } from '../src/engine.js'
 
 const PORT = Number(process.env.PORT || 8787)
@@ -57,6 +58,8 @@ on('PUT', '/api/state', ({ user, body }) => {
     .run(JSON.stringify(incoming), xp, gained, String(incoming.level || 'easy'), Date.now(), user.id)
   return { user: publicUser(userById(user.id)), state: incoming }
 })
+
+on('POST', '/api/academy/generate', ({ body }) => generateAcademy(body))
 
 // --------------------------------- AI ---------------------------------------
 on('GET', '/api/coach', async ({ user }) => ai.coach(parseState(user)))
@@ -362,7 +365,7 @@ export const server = http.createServer(async (req, res) => {
     // Materi & chat panduan sengaja terbuka: kunci AI ada di server, isinya
     // tidak menyentuh data pribadi, dan halaman panduan harus tetap 100%
     // digerakkan AI walau pengguna belum bikin akun.
-    const OPEN_PATHS = new Set(['/api/world', '/api/lessons', '/api/learn/chat'])
+    const OPEN_PATHS = new Set(['/api/academy/generate', '/api/world', '/api/lessons', '/api/learn/chat'])
     const open = url.pathname.startsWith('/api/auth/') || OPEN_PATHS.has(url.pathname)
     let user = null
     if (!open) {

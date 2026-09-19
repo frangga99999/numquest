@@ -1,3 +1,4 @@
+import { generateAcademy } from '../../server/academy.js'
 // Netlify Function — proxy AI endpoint ke DeepSeek.
 // Menangani /api/lessons, /api/learn/chat, /api/coach, /api/quests,
 // /api/challenge, /api/problem/flavor, /api/problem/explain.
@@ -530,6 +531,7 @@ ${ULTIMATE_LEVEL_GUIDE[level]}
 
 // ── Router ──────────────────────────────────────────────────────────────────
 const ROUTES = {
+  'POST /academy/generate': async (_q, body) => generateAcademy(body),
   'GET /lessons': async (q) => {
     const level = ['easy', 'mid', 'adv'].includes(q.level) ? q.level : 'easy'
     const lang = q.lang === 'en' ? 'en' : 'id'

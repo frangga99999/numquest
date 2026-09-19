@@ -1,0 +1,24 @@
+:root {
+  --pr-green-950:#062f28; --pr-green-600:#26865c; --pr-green-400:#62d361;
+  --pr-pink-200:#f3c8e8; --pr-lavender-200:#c4c1f4; --pr-yellow-300:#f9e870;
+  --pr-orange-500:#ee7120; --pr-coral-500:#b53935; --pr-mint-100:#d9eee4;
+  --pr-cream-50:#f7f5eb; --pr-white:#fffef9; --pr-black:#172820;
+  --pr-canvas:var(--pr-cream-50); --pr-surface:var(--pr-white); --pr-surface-subtle:var(--pr-mint-100);
+  --pr-text:var(--pr-green-950); --pr-muted:#516359; --pr-border:#bdc8b9;
+  --pr-action:var(--pr-green-950); --pr-on-action:var(--pr-white);
+  --pr-positive:#176442; --pr-negative:#a12d29; --pr-warning:#765300; --pr-info:#254f90;
+  --pr-reward-common:var(--pr-mint-100); --pr-reward-rare:var(--pr-lavender-200); --pr-reward-epic:var(--pr-pink-200); --pr-reward-legendary:var(--pr-yellow-300);
+  --pr-space-1:4px; --pr-space-2:8px; --pr-space-3:12px; --pr-space-4:16px; --pr-space-5:20px; --pr-space-6:24px; --pr-space-8:32px; --pr-space-10:40px; --pr-space-12:48px; --pr-space-16:64px;
+  --pr-radius-sm:8px; --pr-radius-md:12px; --pr-radius-lg:16px; --pr-radius-card:24px; --pr-radius-hero:32px; --pr-radius-pill:999px;
+  --pr-stroke:1px; --pr-stroke-bold:2px;
+  --pr-shadow-low:2px 3px 0 var(--pr-green-950); --pr-shadow-pop:4px 5px 0 var(--pr-green-950);
+  --pr-font:'Avenir Next',Avenir,'Trebuchet MS',sans-serif;
+  --pr-display:clamp(40px,5.5vw,76px); --pr-heading:clamp(25px,3vw,36px); --pr-body:15px; --pr-caption:12px;
+  --pr-duration-fast:140ms; --pr-duration-normal:220ms; --pr-duration-celebration:480ms; --pr-ease:cubic-bezier(.22,1,.36,1);
+  --pr-button-bg:var(--pr-action); --pr-button-radius:var(--pr-radius-pill); --pr-card-bg:var(--pr-surface);
+}
+[data-pr-theme=dark] {
+  --pr-canvas:#092f29; --pr-surface:#163e34; --pr-surface-subtle:#234f42;
+  --pr-text:#f7f5eb; --pr-muted:#c1d5c7; --pr-border:#658377;
+  --pr-action:#c4efa5; --pr-on-action:#062f28; --pr-positive:#ade8bd; --pr-negative:#ffb2a5; --pr-warning:#f9e870; --pr-info:#b7cdfc;
+}

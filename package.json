@@ -7,7 +7,8 @@
     "build": "vite build",
     "preview": "vite preview",
     "server": "node --env-file-if-exists=.env server/index.js",
-    "test": "node src/engine.test.mjs && node server/server.test.mjs"
+    "test": "node --test src/foundations.test.mjs src/curriculum.test.mjs && node src/engine.test.mjs && node server/server.test.mjs",
+    "test:foundations": "node --test src/foundations.test.mjs"
   },
   "dependencies": {
     "@iconify/react": "^6.0.2",

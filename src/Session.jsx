@@ -2,8 +2,10 @@ import React, { useEffect, useRef, useState, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import gsap from 'gsap'
 import Icon from './Icon.jsx'
+import Battle from './Battle.jsx'
 import { fmt, parseNum, warStars, VARIANT_NAME, comboMult, scoreFor, challengeTarget } from './engine.js'
 import { recordAnswer, loseHeart, useItem, energyNow, shopItem } from './store.js'
+import { nodeIndexOf, nodeColor } from './aiPath.js'
 import { explainProblem } from './ai.js'
 import { sfx } from './sound.js'
 import { burst, bigWin } from './celebrate.js'
@@ -12,6 +14,7 @@ import { t, tf } from './i18n.js'
 const TIME_LIMIT = { easy: 30, mid: 20, adv: 12 }
 const OVERTIME_SEC = 15
 const QUIT_XP_PENALTY = 15
+const WALL_DMG = 18      // kerusakan tembok tiap monster mukul (~6 pukulan = runtuh)
 
 // ---- Cincin hitung-mundur ------------------------------------------------
 function TimerRing({ timeLeft, maxTime, overtime }) {
@@ -81,6 +84,9 @@ export default function Session({ g, setG, plan, onDone, onQuit }) {
   const [comeback, setComeback] = useState(false)    // bonus XP di jawaban berikutnya setelah salah
   const [scorePop, setScorePop] = useState(null)      // {text, mult, color}
   const [score, setScore] = useState(0)               // skor mode tantangan
+  const [wallHp, setWallHp] = useState(100)           // HP tembok kerajaan (mode tempur)
+  const [fx, setFx] = useState(null)                  // {type:'hit'|'smash', n} pemicu animasi arena
+  const fxN = useRef(0)
   const cardRef = useRef(null)
   const screenRef = useRef(null)
   const startRef = useRef(Date.now())
@@ -91,9 +97,15 @@ export default function Session({ g, setG, plan, onDone, onQuit }) {
   const tallyRef = useRef(tally)
   tallyRef.current = tally
 
-  const useTimer = plan.kind === 'normal' || plan.kind === 'challenge' || plan.kind === 'ultimate'
-  const useHearts = useTimer
+  // Jalur AI = mode tempur: butuh timer (biar waktu habis = tembok kena pukul),
+  // tapi nyawanya diganti HP tembok, jadi hearts dimatikan.
+  const isBattle = plan.kind === 'aipath'
+  const useTimer = plan.kind === 'normal' || plan.kind === 'challenge' || plan.kind === 'ultimate' || isBattle
+  const useHearts = useTimer && !isBattle
   const isChallenge = plan.kind === 'challenge'
+  // monster di arena harus persis yang tadi dilawan di peta
+  const battleSeed = isBattle ? Math.max(0, nodeIndexOf(plan.node?.id)) : 0
+  const battleColor = nodeColor(battleSeed)
   const isFocus = plan.kind === 'focus'
   const isUltimate = plan.kind === 'ultimate'
   // Compute current tier for Ultimate Mode
@@ -182,9 +194,15 @@ export default function Session({ g, setG, plan, onDone, onQuit }) {
     clearInterval(timerRef.current)
 
     if (!isOvertime) {
-      // Waktu normal habis → kurangi nyawa, tampilkan flash, mulai waktu tambahan
+      // Waktu normal habis → mode tempur: monster menghantam tembok.
+      // Mode biasa: kurangi nyawa. Dua-duanya lanjut ke waktu tambahan.
       sfx.heartLoss()
-      setG((prev) => loseHeart(prev))
+      if (isBattle) {
+        setWallHp((h) => Math.max(0, h - WALL_DMG))
+        setFx({ type: 'smash', n: ++fxN.current })
+      } else {
+        setG((prev) => loseHeart(prev))
+      }
       setIsOvertime(true)
       setTimeoutFlash(true)
       setTimeout(() => {
@@ -197,11 +215,13 @@ export default function Session({ g, setG, plan, onDone, onQuit }) {
       const t = tallyRef.current
       const seconds = Math.round((Date.now() - t.started) / 1000)
       const isLast = i + 1 >= list.length
-      // Check dead using hearts from g (already updated by setG above)
-      if (isLast || hearts <= 0) {
+      // Check dead using hearts from g (already updated by setG above).
+      // Di mode tempur yang menentukan tembok, bukan nyawa.
+      const out = isBattle ? wallHp <= 0 : hearts <= 0
+      if (isLast || out) {
         onDone({
           kind: plan.kind, seconds, problems: t.problems, correct: t.correct, xp: t.xp,
-          ranOut: hearts <= 0, hpLeft: hp, score, target,
+          ranOut: out, hpLeft: hp, score, target,
           stars: plan.kind === 'war' ? warStars({ correct: t.correct, problems: t.problems, seconds }) : 0,
         })
       } else {
@@ -216,7 +236,7 @@ export default function Session({ g, setG, plan, onDone, onQuit }) {
 
   if (!p) return null
 
-  const dead = useHearts ? hearts <= 0 : plan.kind === 'defense' ? hp <= 0 : false
+  const dead = isBattle ? wallHp <= 0 : useHearts ? hearts <= 0 : plan.kind === 'defense' ? hp <= 0 : false
   const maxTime = isOvertime ? OVERTIME_SEC : (TIME_LIMIT[g.level] || 30)
 
   const submit = (raw) => {
@@ -228,7 +248,7 @@ export default function Session({ g, setG, plan, onDone, onQuit }) {
     // Comeback: setelah salah, jawaban benar berikutnya bonus +5 XP
     const comebackBonus = correct && comeback ? 5 : 0
     const before = g.xp
-    let next = recordAnswer(g, p, { correct, hinted, explained, ms, mult: plan.mult || 1 })
+    let next = recordAnswer(g, p, { correct, hinted, explained, ms, mult: plan.mult || 1, given })
     if (comebackBonus) { next = { ...next, xp: next.xp + comebackBonus, coins: next.coins + 1 } }
     gained.current = next.xp - before
     setG(next)
@@ -255,9 +275,16 @@ export default function Session({ g, setG, plan, onDone, onQuit }) {
     if (!correct) {
       sfx.wrong()
       if (plan.kind === 'defense') setHp((h) => Math.max(0, h - 12))
+      // salah = monster nembus pertahanan dan menghantam tembok
+      if (isBattle) {
+        setWallHp((h) => Math.max(0, h - WALL_DMG))
+        setFx({ type: 'smash', n: ++fxN.current })
+      }
       gsap.fromTo(cardRef.current, { x: -10 }, { x: 0, duration: 0.5, ease: 'elastic.out(1,0.3)' })
     } else {
       sfx.correct()
+      // benar = pasukan menyerbu, monster kena
+      if (isBattle) setFx({ type: 'hit', n: ++fxN.current })
       if (newCorrect > 0 && newCorrect % 5 === 0) { sfx.levelup(); burst({ particleCount: 60, spread: 70 }) }
       else if (comebackBonus) burst({ particleCount: 25, spread: 50 })
       gsap.fromTo(cardRef.current, { scale: 0.97 }, { scale: 1, duration: 0.45, ease: 'back.out(2)' })
@@ -469,7 +496,6 @@ export default function Session({ g, setG, plan, onDone, onQuit }) {
         </div>
         <div className="ss-meta">
           {p.variant !== 'plain' && <span className="ss-badge">{VARIANT_NAME[p.variant]}</span>}
-          {p.skill && <span className="ss-badge ss-badge--dim">{p.skill}</span>}
           <AnimatePresence>
             {combo >= 3 && (
               <motion.span className="ss-badge ss-badge--fire"
@@ -486,6 +512,19 @@ export default function Session({ g, setG, plan, onDone, onQuit }) {
           </AnimatePresence>
         </div>
       </div>
+
+      {/* ── Mode tempur Jalur AI: arena di atas, kontrol soal di bawah ──── */}
+      {isBattle && (
+        <Battle
+          seed={battleSeed}
+          color={battleColor}
+          wallHp={wallHp}
+          monHp={Math.max(0, 100 - Math.round((tally.correct / list.length) * 100))}
+          army={1 + Math.min(4, Math.floor(tally.correct / 2))}
+          fx={fx}
+          lang={g.lang}
+        />
+      )}
 
       {/* ── Ultimate tier indicator ──────────────────────────────────── */}
       {isUltimate && currentTier && (
@@ -866,13 +905,12 @@ export default function Session({ g, setG, plan, onDone, onQuit }) {
               <motion.div className="ss-quit-btns"
                 initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: .18 }}>
-                <motion.button className="btn ghost" onClick={() => setShowQuit(false)}
+                <motion.button className="btn soft" onClick={() => setShowQuit(false)}
                   whileHover={{ scale: 1.02 }} whileTap={{ scale: .96 }}>
                   {t('session.quit_stay', g.lang)}
                 </motion.button>
-                <motion.button className="btn soft" onClick={confirmQuit}
-                  whileHover={{ scale: 1.02 }} whileTap={{ scale: .96 }}
-                  style={{ background: 'linear-gradient(180deg, #4a2020, #2a1010)', border: '1px solid #6a3030', boxShadow: '0 4px 0 #1a0a0a' }}>
+                <motion.button className="btn danger" onClick={confirmQuit}
+                  whileHover={{ scale: 1.02 }} whileTap={{ scale: .96 }}>
                   {tf('session.quit_go', g.lang, { n: QUIT_XP_PENALTY })}
                 </motion.button>
               </motion.div>

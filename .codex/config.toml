@@ -1,0 +1,5 @@
+[mcp_servers.browser-use]
+url = "http://localhost:8383/mcp"
+
+[mcp_servers.firecrawl]
+url = "https://mcp.firecrawl.dev/v2/mcp/mcp"

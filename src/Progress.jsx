@@ -31,16 +31,18 @@ function StatCircle({ value, max, color, icon, label, detail, delay = 0 }) {
     <motion.div className="pg-stat-circle"
       initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
       transition={{ delay, type: 'spring', stiffness: 200, damping: 22 }}>
-      <svg width={90} height={90} viewBox="0 0 90 90">
-        <circle cx={45} cy={45} r={R} fill="none" stroke="rgba(255,255,255,.06)" strokeWidth={5} />
-        <motion.circle cx={45} cy={45} r={R} fill="none" stroke={color} strokeWidth={5}
-          strokeLinecap="round" transform="rotate(-90 45 45)"
-          initial={{ strokeDasharray: `0 ${C}` }}
-          animate={{ strokeDasharray: `${C * pct} ${C}` }}
-          transition={{ delay: delay + 0.3, duration: 1, ease: 'easeOut' }} />
-        <text x={45} y={42} textAnchor="middle" fill="var(--ink)" fontSize={18} fontWeight="800"
-          fontFamily="inherit">{icon ? <tspan><Icon name={icon} size={18} color={color} /></tspan> : null}</text>
-      </svg>
+      <div className="pg-ring-wrap" style={{ '--rc': color }}>
+        <svg width={90} height={90} viewBox="0 0 90 90">
+          <circle cx={45} cy={45} r={R} fill="none" stroke="rgba(255,255,255,.06)" strokeWidth={6} />
+          <motion.circle cx={45} cy={45} r={R} fill="none" stroke={color} strokeWidth={6}
+            strokeLinecap="round" transform="rotate(-90 45 45)"
+            initial={{ strokeDasharray: `0 ${C}` }}
+            animate={{ strokeDasharray: `${C * pct} ${C}` }}
+            transition={{ delay: delay + 0.3, duration: 1, ease: 'easeOut' }}
+            style={{ filter: `drop-shadow(0 0 5px ${color}55)` }} />
+        </svg>
+        <span className="pg-ring-icon"><Icon name={icon} size={26} color={color} /></span>
+      </div>
       <div className="pg-stat-label">
         <span className="pg-stat-val" style={{ color }}><CountUp value={value} /></span>
         <span className="pg-stat-name">{label}</span>

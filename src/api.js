@@ -2,7 +2,7 @@
 // Aplikasi tetap jalan penuh tanpa server — pemanggil menangkap galat dan
 // jatuh ke mesin lokal + localStorage.
 
-const BASE = import.meta.env?.VITE_API || 'http://localhost:8787/api'
+const BASE = import.meta.env?.VITE_API || (import.meta.env?.DEV ? 'http://localhost:8787/api' : '/api')
 const TKEY = 'numquest.token'
 // modul ini ikut terbaca oleh test di Node — di sana tidak ada localStorage
 const store = typeof localStorage !== 'undefined' ? localStorage : { getItem: () => null, setItem: () => {}, removeItem: () => {} }
@@ -32,7 +32,11 @@ export function setToken(t) {
 }
 
 async function call(method, path, body) {
+  const ctrl = new AbortController()
+  const timer = setTimeout(() => ctrl.abort(), path.startsWith('/lessons') ? 30000 : 14000)
+  try {
   const res = await fetch(BASE + path, {
+    signal: ctrl.signal,
     method,
     headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
     body: body === undefined ? undefined : JSON.stringify(body),
@@ -43,9 +47,11 @@ async function call(method, path, body) {
     throw new Error(data.error || `Gangguan jaringan (${res.status})`)
   }
   return data
+  } finally { clearTimeout(timer) }
 }
 
 export const api = {
+  academy: (body) => call('POST', '/academy/generate', body),
   register: async (b) => { const r = await call('POST', '/auth/register', b); setToken(r.token); return r },
   login: async (b) => { const r = await call('POST', '/auth/login', b); setToken(r.token); return r },
   logout: () => setToken(null),
