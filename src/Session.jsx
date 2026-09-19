@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import gsap from 'gsap'
 import Icon from './Icon.jsx'
 import Battle from './Battle.jsx'
-import { fmt, parseNum, warStars, VARIANT_NAME, comboMult, scoreFor, challengeTarget } from './engine.js'
+import { fmt, parseNum, warStars, VARIANT_NAME, comboMult, scoreFor, challengeTarget, skillById } from './engine.js'
 import { recordAnswer, loseHeart, useItem, energyNow, shopItem } from './store.js'
 import { nodeIndexOf, nodeColor } from './aiPath.js'
 import { explainProblem } from './ai.js'
@@ -496,6 +496,7 @@ export default function Session({ g, setG, plan, onDone, onQuit }) {
         </div>
         <div className="ss-meta">
           {p.variant !== 'plain' && <span className="ss-badge">{VARIANT_NAME[p.variant]}</span>}
+          {skillById[p.skill]?.name && <span className="ss-badge ss-badge--dim">{skillById[p.skill].name}</span>}
           <AnimatePresence>
             {combo >= 3 && (
               <motion.span className="ss-badge ss-badge--fire"

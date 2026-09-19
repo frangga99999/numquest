@@ -1097,9 +1097,15 @@ svg { flex: none; vertical-align: middle; }
 .duo-progress .gp-track { flex: 1; }
 
 /* ── Map container ────────────────────────────────────────────────────────── */
-.duo-map {
+/* Wrapper mengunci lebar & tinggi terskala; peta di dalamnya digambar pada
+   lebar tetap 480px lalu di-scale sebagai satu kesatuan (SVG + node). */
+.duo-map-wrap {
   position: relative;
   width: 100%;
+  overflow: hidden;
+}
+.duo-map {
+  position: relative;
   overflow: visible;
 }
 .duo-svg {
@@ -1656,6 +1662,7 @@ svg { flex: none; vertical-align: middle; }
   padding: 18px;
   display: flex;
   flex-direction: column;
+  justify-content: safe center;
   gap: 14px;
   box-shadow: 0 10px 36px rgba(0,0,0,.55), inset 0 1px 0 rgba(141,123,255,.14);
   overflow-y: auto;
@@ -2069,6 +2076,14 @@ svg { flex: none; vertical-align: middle; }
 .home-col-mid,
 .home-col-right { display: flex; flex-direction: column; gap: 16px; }
 
+/* ── Home layout — mobile: satu kolom dengan jarak antar-kartu konsisten.
+   (Tablet & desktop menimpanya jadi grid 2 kolom di media query bawah.)
+   Tanpa aturan dasar ini, kartu di dalam .home-cols menumpuk tanpa jarak. */
+.home-cols { display: flex; flex-direction: column; gap: 16px; }
+.home-col-left,
+.home-col-mid,
+.home-col-right { display: flex; flex-direction: column; gap: 16px; }
+
 /* ── Energy pips — visual orbs tanpa teks ──────────────────────── */
 .energy-pips {
   display: flex; align-items: center; justify-content: center; gap: 5px;
@@ -2303,6 +2318,24 @@ svg { flex: none; vertical-align: middle; }
   border: 1px solid var(--line);
 }
 .rank-score b { font-size: 22px; color: var(--gold); font-variant-numeric: tabular-nums; }
+
+/* ── Vonis penguasaan (Summary) ────────────────────────────────────────── */
+.mastery-verdict {
+  width: 100%;
+  border-radius: 16px;
+  padding: 16px;
+  border: 1px solid;
+  display: flex; flex-direction: column; gap: 10px;
+  text-align: left;
+}
+.mastery-verdict.ok { background: rgba(62,201,138,.10); border-color: rgba(62,201,138,.35); }
+.mastery-verdict.no { background: rgba(244,185,66,.10); border-color: rgba(244,185,66,.35); }
+.mv-head { display: flex; align-items: center; gap: 10px; }
+.mv-head b { font-size: 16px; color: var(--ink); font-weight: 800; }
+.mastery-verdict p { font-size: 13px; line-height: 1.5; }
+.mv-track { height: 8px; border-radius: 99px; background: rgba(255,255,255,.08); overflow: hidden; }
+.mv-track i { display: block; height: 100%; border-radius: 99px; }
+.mv-retry { margin-top: 4px; min-height: 46px; }
 
 /* ── Briefing tantangan ────────────────────────────────────────────────── */
 .ch-brief {

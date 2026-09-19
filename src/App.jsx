@@ -815,7 +815,7 @@ function ChallengeBrief({ ch, g, onStart, onClose }) {
 }
 
 /* -------------------------------- Summary -------------------------------- */
-function Summary({ s, g, onClose }) {
+function Summary({ s, g, onClose, onRetry }) {
   const ref = useRef(null)
   useEffect(() => {
     if (g.reducedMotion) return
@@ -823,6 +823,11 @@ function Summary({ s, g, onClose }) {
     const tween = gsap.to(o, { v: s.xp, duration: 1.2, ease: 'power2.out', onUpdate: () => { if (ref.current) ref.current.textContent = Math.round(o.v) } })
   }, []) // eslint-disable-line
   const acc = s.problems ? Math.round((s.correct / s.problems) * 100) : 0
+  // Vonis penguasaan: untuk sesi latihan skill (bukan tantangan/perang yang
+  // sudah punya rank/bintang). ≥80% = paham, boleh lanjut; kurang = ulangi.
+  const MASTERY_PASS = 80
+  const gateable = ['normal', 'aipath', 'ultimate'].includes(s.kind) && s.problems >= 3
+  const understood = acc >= MASTERY_PASS
   const icon = s.ranOut ? 'ph:moon-fill' : acc >= 80 ? 'ph:trophy-fill' : 'ph:sun-fill'
   const iconColor = s.ranOut ? 'var(--dim)' : acc >= 80 ? 'var(--gold)' : 'var(--op-add)'
   const isChallenge = s.kind === 'challenge' && s.target > 0
@@ -900,6 +905,30 @@ function Summary({ s, g, onClose }) {
           : s.ranOut ? t('sum.normal_rest_body', g.lang)
           : acc >= 80 ? t('sum.normal_great_body', g.lang) : t('sum.normal_ok_body', g.lang)}
       </motion.p>
+
+      {/* Vonis penguasaan — apakah sudah cukup paham untuk lanjut */}
+      {gateable && (
+        <motion.div className={'mastery-verdict ' + (understood ? 'ok' : 'no')}
+          initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: .44 }}>
+          <div className="mv-head">
+            <Icon name={understood ? 'ph:seal-check-fill' : 'ph:seal-warning-fill'} size={24}
+              color={understood ? 'var(--green)' : 'var(--gold)'} />
+            <b>{understood ? t('sum.mastery_yes_title', g.lang) : t('sum.mastery_no_title', g.lang)}</b>
+          </div>
+          <p>{tf(understood ? 'sum.mastery_yes_body' : 'sum.mastery_no_body', g.lang, { acc })}</p>
+          <div className="mv-track" role="progressbar" aria-label={tf('sum.mastery_bar', g.lang, { acc })}>
+            <motion.i style={{ background: understood ? 'var(--green)' : 'var(--gold)' }}
+              initial={{ width: 0 }} animate={{ width: `${Math.min(100, acc)}%` }}
+              transition={{ delay: .55, duration: .8, ease: 'easeOut' }} />
+          </div>
+          {!understood && (
+            <button className="btn soft mv-retry" onClick={onRetry}>
+              <Icon name="ph:shuffle-fill" size={17} /> {t('sum.retry_diff', g.lang)}
+            </button>
+          )}
+        </motion.div>
+      )}
+
       <motion.div className="grid g3"
         initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: .4 }}>
         <motion.div className="stat"
@@ -1017,6 +1046,8 @@ export default function App() {
   const [loadingSession, setLoadingSession] = useState(false)
   const [showFocusPicker, setShowFocusPicker] = useState(false)
   const [notif, setNotif] = useState(null) // {type, title, body, actions}
+  const [lastStart, setLastStart] = useState(null) // untuk "ulangi dengan soal beda"
+  const retryRef = useRef(0) // naik tiap ulang → variasi bentuk soal berbeda
 
   useEffect(() => { document.body.classList.toggle('dyslexic', !!g.dyslexic) }, [g.dyslexic])
   useEffect(() => { document.body.dataset.skin = g.skin || '' }, [g.skin])
@@ -1046,13 +1077,16 @@ export default function App() {
   }, [g.onboarded, g.plan?.day, g.level, tab]) // eslint-disable-line
 
   const start = async (kind, domain, node, focusMin) => {
+    setLastStart({ kind, domain, node, focusMin })
     const ch = g.plan?.challenge || localChallenge(g, Math.floor(Date.now() / 86400000))
     const curEnergy = energyNow(g)
     const useEnergy = kind === 'normal' && curEnergy > 0
     const fresh = { ...g, hearts: heartsNow(g), heartsAt: Date.now(), combo: 0,
       energy: useEnergy ? curEnergy - 1 : curEnergy,
       energyDay: new Date().toISOString().slice(0, 10) }
-    const opts = domain ? { domain } : {}
+    // variantSeed digeser tiap "ulangi" supaya bentuk soal ikut berubah (angka
+    // memang selalu acak, ini bikin variasi bentuknya juga tidak pernah sama).
+    const opts = { ...(domain ? { domain } : {}), variantSeed: retryRef.current }
     const plans = {
       normal: () => {
         const count = g.plan?.coach?.sessionCount
@@ -1064,7 +1098,7 @@ export default function App() {
       defense: () => ({ kind: 'defense', title: t('session.kingdom_defense', g.lang), mult: 1, hp: 60 + Object.values(buildingLevels(g)).reduce((a, b) => a + b, 0) * 20, problems: buildSession(fresh, 0, [], { count: 15, variantSeed: 3 }) }),
       aipath: () => ({
         kind: 'aipath', title: node.title, mult: 1, node,
-        problems: buildSession(fresh, 0, [], { count: NODE_PROBLEM_COUNT, skillIds: node.skillIds, variantSeed: node.skillIds.length }),
+        problems: buildSession(fresh, 0, [], { count: NODE_PROBLEM_COUNT, skillIds: node.skillIds, variantSeed: node.skillIds.length + retryRef.current }),
       }),
       ultimate: () => {
         const TOTAL = 20
@@ -1185,6 +1219,14 @@ export default function App() {
     setView('summary')
   }
 
+  // Ulangi sesi terakhir dengan soal baru — bentuk & angka berbeda tiap kali.
+  const retrySession = () => {
+    if (!lastStart) return setView('main')
+    retryRef.current += 1
+    const { kind, domain, node, focusMin } = lastStart
+    start(kind, domain, node, focusMin)
+  }
+
   if (tab === 'design-system') return <DesignSystem onClose={() => { history.replaceState(null, '', location.pathname); setTab('foundation') }} />
 
   if (tab === 'academy' || view === 'academy') return <Academy g={g} setG={setG} onClose={() => { setTab(FOUNDATION_FLAG ? 'foundation' : 'home'); setView('main') }} />
@@ -1205,7 +1247,7 @@ export default function App() {
     )
 
   if (view === 'session') return <Session g={g} setG={setG} plan={session} onQuit={() => setView('main')} onDone={done} />
-  if (view === 'summary') return <Summary s={summary} g={g} onClose={() => setView('main')} />
+  if (view === 'summary') return <Summary s={summary} g={g} onClose={() => setView('main')} onRetry={retrySession} />
   if (view === 'auth') return <Auth g={g} setG={setG} onClose={() => setView('main')} />
   if (view === 'aipath') return <AIPath g={g} onStart={(node) => start('aipath', null, node)} onClose={() => setView('main')} />
   if (view === 'shop') return <Shop g={g} setG={setG} onClose={() => setView('main')} />

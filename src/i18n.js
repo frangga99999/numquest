@@ -485,6 +485,14 @@ const DICT = {
   'shop.explainscroll.name':{ id: 'Gulungan Ilmu', en: 'Knowledge Scroll' },
   'shop.explainscroll.desc':{ id: 'Lihat langkah penyelesaian 1 soal', en: 'See solution steps for 1 problem' },
 
+  // ── Vonis penguasaan (Summary) ─────────────
+  'sum.mastery_yes_title': { id: 'Kamu udah paham! 🎉', en: "You've got it! 🎉" },
+  'sum.mastery_yes_body':  { id: 'Akurasi {acc}% — mantap, boleh lanjut ke tantangan berikutnya.', en: 'Accuracy {acc}% — nice, you can move on to the next challenge.' },
+  'sum.mastery_no_title':  { id: 'Belum cukup paham nih', en: 'Not quite there yet' },
+  'sum.mastery_no_body':   { id: 'Akurasi {acc}%. Ulangi dulu dengan soal yang beda biar makin nempel — target 80%.', en: 'Accuracy {acc}%. Retry with different problems to make it stick — aim for 80%.' },
+  'sum.mastery_bar':       { id: '{acc}% / 80% paham', en: '{acc}% / 80% mastery' },
+  'sum.retry_diff':        { id: 'Ulangi — soal baru', en: 'Retry — new problems' },
+
   // ── Misc extras ────────────────────────────
   'misc.free_item':      { id: 'Item gratis!',   en: 'Free item!' },
   'misc.got_item':       { id: 'Kamu dapat {item}', en: 'You got {item}' },
