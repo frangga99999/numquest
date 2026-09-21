@@ -9,7 +9,6 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 ROOT="$PWD"
-PORT="$(sed -n 's/^PORT=//p' .env 2>/dev/null | tail -1)"
 PORT="${PORT:-8790}"
 SERVICE="numquest.service"
 
@@ -48,4 +47,4 @@ CODE="$(curl -fsS -o /dev/null -w '%{http_code}' "http://127.0.0.1:${PORT}/" || 
 echo "==> sehat: HTTP $CODE di http://127.0.0.1:${PORT}/"
 [[ "$CODE" == "200" ]] || { echo "!! Frontend tidak menjawab 200" >&2; exit 1; }
 
-echo "==> selesai. Publik: http://43.134.180.13:${PORT}/"
+echo "==> selesai. Port aplikasi: ${PORT}"

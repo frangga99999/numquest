@@ -149,6 +149,10 @@ body:has(.fn-app) { background: #f8f9f5; color: #233b32; }
 .fn-toggle strong { font-size: 13px; }
 .fn-toggle input { accent-color: var(--fn-green); width: 22px; height: 22px; flex-shrink: 0; }
 .fn-study-wrap { width: 100%; max-width: 650px; margin: 0 auto; display: flex; flex-direction: column; gap: 24px; }
+.fn-guide-dialog { width:calc(100% - 28px); max-width:620px; max-height:calc(100dvh - 40px); padding:0; border:1px solid #a6b6a4; border-radius:24px; background:#f8f6ec; color:#0b382e; overflow:auto; overscroll-behavior:contain; }
+.fn-guide-dialog::backdrop { background:#082f27a6; backdrop-filter:blur(4px); }
+.fn-guide-content { display:flex; flex-direction:column; gap:20px; padding:22px; }
+.fn-guide-content .fn-heading h1 { font-size:clamp(24px,5vw,36px); }
 .fn-study-top { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 .fn-study-top > span { font-size: 12px; color: var(--fn-muted); }
 .fn-study-wrap h1 { font-size: clamp(28px, 4vw, 38px); }

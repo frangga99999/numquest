@@ -1,0 +1,13 @@
+[Unit]
+Description=NumQuest Telegram owner control
+After=network-online.target
+
+[Service]
+WorkingDirectory=%h/numquest
+EnvironmentFile=%h/.config/numquest/telegram.env
+ExecStart=/usr/bin/node scripts/telegram-control.mjs
+Restart=on-failure
+RestartSec=10
+
+[Install]
+WantedBy=default.target
