@@ -7,6 +7,7 @@ import { hashPassword, verifyPassword, makeToken, readToken, validateSignup } fr
 import * as ai from './ai.js'
 import { generateAcademy } from './academy.js'
 import { today } from '../src/engine.js'
+import { createStatic } from './static.js'
 
 const PORT = Number(process.env.PORT || 8787)
 const routes = []
@@ -354,10 +355,19 @@ const readBody = (req) => new Promise((resolve, reject) => {
 
 const match = (route, parts) => route.path.length === parts.length && route.path.every((p, i) => p === parts[i])
 
+// Frontend hasil build dilayani proses yang sama — tidak perlu nginx, tidak perlu
+// proses kedua. STATIC_DIR dikosongkan untuk mode API-saja (mis. di belakang proxy).
+const STATIC_DIR = process.env.STATIC_DIR ?? fileURLToPath(new URL('../dist/', import.meta.url))
+const serveStatic = createStatic(STATIC_DIR)
+
 export const server = http.createServer(async (req, res) => {
   if (req.method === 'OPTIONS') return send(res, 204, {})
   const url = new URL(req.url, 'http://localhost')
   const parts = url.pathname.split('/')
+
+  // Apa pun di luar /api dilayani sebagai berkas statis.
+  if (!url.pathname.startsWith('/api/') && serveStatic(req, res, url.pathname)) return
+
   const route = routes.find((r) => r.method === req.method && match(r, parts))
   if (!route) return send(res, 404, { error: 'Rute tidak ditemukan' })
 

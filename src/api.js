@@ -4,8 +4,11 @@
 
 const BASE = import.meta.env?.VITE_API || (import.meta.env?.DEV ? 'http://localhost:8787/api' : '/api')
 const TKEY = 'numquest.token'
-// modul ini ikut terbaca oleh test di Node — di sana tidak ada localStorage
-const store = typeof localStorage !== 'undefined' ? localStorage : { getItem: () => null, setItem: () => {}, removeItem: () => {} }
+// modul ini ikut terbaca oleh test di Node — di sana tidak ada localStorage.
+// Node 25+ memaparkan localStorage global tetapi tanpa getItem, jadi periksa
+// metodenya, bukan sekadar keberadaan objeknya.
+const hasStore = typeof localStorage !== 'undefined' && typeof localStorage?.getItem === 'function'
+const store = hasStore ? localStorage : { getItem: () => null, setItem: () => {}, removeItem: () => {} }
 
 let token = store.getItem(TKEY) || null
 export const loggedIn = () => !!token
