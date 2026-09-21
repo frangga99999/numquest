@@ -1,6 +1,28 @@
 # VPS dan Telegram
 
-Status: kode integrasi tersedia; koneksi VPS dan bot belum diverifikasi dari sesi ini.
+## VPS yang sudah aktif (diverifikasi 21 September 2026)
+
+- SSH: `ubuntu@43.134.180.13`, port 22, menggunakan SSH key lokal.
+- Aplikasi: `/home/ubuntu/mental-math`, layanan user `numquest.service`.
+- Alamat: http://43.134.180.13:8790/ (HTTP 200 dari luar VPS).
+- Bot: @VpsMangokubot; identitas telah diverifikasi dengan Telegram getMe.
+- Bot menggunakan `hermes-gateway.service`, dengan allowlist pengguna terkonfigurasi.
+- Panduan proyek bot: `/home/ubuntu/.hermes/skills/devops/numquest-vps/SKILL.md`.
+
+Gunakan bot yang sudah berjalan ini, **jangan aktifkan numquest-telegram.service
+dengan token bot yang sama**. Contoh pesan: “Cek status NumQuest di
+/home/ubuntu/mental-math” atau “Perbaiki tampilan NumQuest, jalankan tes, lalu
+tunjukkan perubahan sebelum deploy”. Respons percakapan end-to-end masih perlu
+dicoba dari akun Telegram pemilik; verifikasi di atas memeriksa layanan dan identitas.
+
+VPS memiliki perubahan lokal yang belum di-commit pada Foundation.jsx dan
+engine.js, serta Calculator.jsx/CSS baru. Jangan pull atau menimpa perubahan ini
+sebelum pengguna memilih versi keypad yang akan dipakai. Jangan hapus database
+atau mengganti AUTH_SECRET. URL VPS belum HTTPS: jangan mengirim kata sandi/data
+sensitif melalui URL tersebut; gunakan situs HTTPS Netlify sementara ini.
+
+## Alternatif pemasangan baru (bukan bot aktif di atas)
+
 Gunakan Linux dengan Node 24, Git, npm, systemd user, dan Codex CLI yang sudah login.
 Frontend dist dan API dilayani oleh server/index.js pada proses yang sama.
 
