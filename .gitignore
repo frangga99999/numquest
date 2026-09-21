@@ -2,6 +2,7 @@ node_modules
 dist
 .env
 numquest.db*
+numquest.log
 .DS_Store
 
 # Local Netlify folder
